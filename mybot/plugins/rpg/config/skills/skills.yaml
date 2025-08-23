@@ -1,0 +1,62 @@
+version: 1
+skills:
+  - id: active_power
+    name: 重击
+    type: active
+    cd: 2
+    target: enemy
+    actions:
+      - op: damage
+        mult: 1.6
+        crit_scale: 1.5      # 可选，默认1.5
+        variance: [0.95,1.05] # 可选
+      - op: log
+        text: "{actor}【重击】对 {target} 造成 {damage}{crit_text}"
+
+  - id: active_quick
+    name: 迅捷
+    type: active
+    cd: 3
+    target: self
+    actions:
+      - op: add_buff
+        buff:
+          id: haste
+          name: 迅捷
+          effect: { SPD%: 0.25 }
+          duration: 2
+          max_stacks: 1
+
+  - id: passive_berserk
+    name: 嗜血本能
+    type: passive
+    hooks:
+      on_turn_start:
+        - op: if
+          cond: { foe_hp_pct_lt: 0.5 }
+          then:
+            - op: add_buff
+              buff:
+                id: berserk
+                name: 嗜血
+                effect: { ATK%: 0.2 }
+                duration: 1
+                max_stacks: 1
+
+  - id: passive_thorns
+    name: 荆棘甲
+    type: passive
+    hooks:
+      on_receive_damage:
+        - op: reflect
+          ratio: 0.15
+          min: 1
+
+  - id: passive_lifesteal
+    name: 吸血
+    type: passive
+    hooks:
+      on_deal_damage:
+        - op: heal_self_by_damage
+          ratio: 0.2
+          cap_by_maxhp: true

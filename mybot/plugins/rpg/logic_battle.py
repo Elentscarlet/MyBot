@@ -7,22 +7,23 @@
 """
 import random
 from typing import Dict, Tuple
+from .models import Player
 
 # 如果你的项目里还保留旧版 simulate_duel，可与新版并存
 # from .logic_battle import simulate_duel  # 老函数（可删除）
 
 
 # --- 面板/内在数值推导（保持原样，供 handlers 读取） ---
-def derive_internal_stats(p: Dict) -> Dict[str, float]:
-    Lv = p["level"]
-    pts = p["points"]
-    slots = p["weapon"]["slots"]
+def derive_internal_stats(p: Player) -> Dict[str, float]:
+    Lv = p.level
+    pts = p.points
+    slots = p.weapon.slots
     score = int(slots[0] * 1 + slots[1] * 2 + slots[2] * 3)
-    atk = 6 + 2 * score + Lv + 2 * pts["str"]
-    dfn = 4 + Lv + 1.5 * pts["def"]
-    hp = 80 + 10 * Lv + 12 * pts["hp"]
-    spd = 8 + (Lv // 2) + 0.6 * pts["agi"]
-    cri = min(30, 10 + 0.8 * pts["crit"])
+    atk = 6 + 2 * score + Lv + 2 * pts.str
+    dfn = 4 + Lv + 1.5 * pts.def_
+    hp = 80 + 10 * Lv + 12 * pts.hp
+    spd = 8 + (Lv // 2) + 0.6 * pts.agi
+    cri = min(30, 10 + 0.8 * pts.crit)
     return {"ATK": atk, "DEF": dfn, "HP": hp, "SPD": spd, "CRIT": cri}
 
 

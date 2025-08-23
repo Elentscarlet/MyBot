@@ -1,0 +1,14 @@
+rules:
+  # 根据武器评分发技能
+  - when: { score_gte: 12 }
+    give: [active_power]
+  - when: { score_gte: 18 }
+    give: [active_quick]
+  - when: { score_gte: 20 }
+    give: [passive_thorns]
+  - when: { score_gte: 22 }
+    give: [passive_lifesteal]
+
+# 每个人默认被动
+defaults:
+  give: [passive_berserk]
