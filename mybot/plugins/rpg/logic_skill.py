@@ -9,14 +9,8 @@
 
 from __future__ import annotations
 from typing import List, Any
-
-try:
-    # 运行期类型提示（避免循环导入时的静态工具报错）
-    from .battle.entity import Entity  # type: ignore
-    from .engine.skill_engine import SkillEngine  # type: ignore
-except Exception:
-    Entity = Any  # type: ignore
-    SkillEngine = Any  # type: ignore
+from .battle.entity import Entity  # type: ignore
+from .engine.skill_engine import SkillEngine  # type: ignore
 
 
 __all__ = [
@@ -47,7 +41,7 @@ def score_from_weapon(player: Any) -> int:
     return int(s1 * 1 + s2 * 2 + s3 * 3)
 
 
-def equip_skills_for_player(player: Any, ent: "Entity") -> None:
+def equip_skills_for_player(player: Any, ent: Entity) -> None:
     """
     为玩家实体配发技能（完全表驱动）：
     1) 用 score_from_weapon(player) 计算 score

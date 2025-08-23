@@ -2,17 +2,41 @@
 from typing import Dict
 from .entity import Entity
 
+BASE_STATS = {
+    "ATK": 5,
+    "DEF": 3,
+    "AGI": 3,
+    "INT": 3,
+    "HP": 10,  # 基础HP点数
+    "CRIT": 0.05,  # 基础暴击率
+}
+
 
 def player_to_entity(player) -> Entity:
     """把账号养成数据映射为一个战斗实体；不修改/污染 player 本体。"""
-    # 例：简化映射；你可按项目规则换算
     base = {
-        "ATK": player.points.get("str", 0) + getattr(player.weapon, "atk", 0),
-        "DEF": player.points.get("def", 0) + getattr(player.weapon, "def", 0),
-        "AGI": player.points.get("agi", 0) + getattr(player.weapon, "agi", 0),
-        "INT": player.points.get("int", 0) + getattr(player.weapon, "int", 0),
-        "MAX_HP": (player.points.get("hp", 0) + getattr(player.weapon, "hp", 0)) * 10,
-        "CRIT": max(0.0, min(1.0, player.points.get("crit", 0) / 100.0)),
+        "ATK": BASE_STATS["ATK"]
+        + getattr(player.points, "str", 0)
+        + getattr(player.weapon, "atk", 0),
+        "DEF": BASE_STATS["DEF"]
+        + getattr(player.points, "def", 0)
+        + getattr(player.weapon, "def", 0),
+        "AGI": BASE_STATS["AGI"]
+        + getattr(player.points, "agi", 0)
+        + getattr(player.weapon, "agi", 0),
+        "INT": BASE_STATS["INT"]
+        + getattr(player.points, "int", 0)
+        + getattr(player.weapon, "int", 0),
+        "MAX_HP": (
+            BASE_STATS["HP"]
+            + getattr(player.points, "hp", 0)
+            + getattr(player.weapon, "hp", 0)
+        )
+        * 10,
+        "CRIT": min(
+            1.0,
+            max(0.0, BASE_STATS["CRIT"] + getattr(player.points, "crit", 0) / 100.0),
+        ),
     }
     return Entity(name=player.name, base_stats=base, tag="player")
 

@@ -23,11 +23,16 @@ def refine_cost(next_val: int) -> int:
 
 @dataclass
 class Points:
-    str: int = 0
-    def_: int = 0  # 注意字段名从 def -> def_，防止关键字冲突
-    hp: int = 0
-    agi: int = 0
+    str: int = 8
+    def_: int = 6  # 注意字段名从 def -> def_，防止关键字冲突
+    hp: int = 6
+    agi: int = 6
     crit: int = 0
+
+    @staticmethod
+    def default():
+        # 固定模板：力量8、防御6、体力6、敏捷6、暴击0（总计26点）
+        return Points(str=8, def_=6, hp=6, agi=6, crit=0)
 
     @staticmethod
     def from_dict(d: Dict) -> "Points":
@@ -255,6 +260,11 @@ def get_player(uid: str, gid: str, name: str) -> Player:
         return p
     p = Player.from_dict(raw)
     # 跨天 counters 刷新已经在 Counters.from_dict() 做了
+    # 补全属性
+    if not hasattr(p, "points") or p.points is None:
+        p.points = Points()
+    if not hasattr(p, "weapon") or p.weapon is None:
+        p.weapon = Weapon()
     return p
 
 

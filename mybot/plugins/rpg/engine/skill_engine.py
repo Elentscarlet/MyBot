@@ -127,7 +127,7 @@ class SkillEngine:
                 self._run_effects(getattr(s, "effects", []), ctx, tlist)
 
         # 2) BUFF 即时触发（非 tick）
-        for buff in list(getattr(actor, "buffs", {}).values()):
+        for buff in getattr(actor, "buffs", []):
             bdef = self.buff_defs.get(buff.buff_id, {})
             if bdef.get("trigger") == event:
                 tlist = self._resolve_targets(actor, bdef.get("target", "self"))
@@ -160,7 +160,7 @@ class SkillEngine:
 
     def tick_buffs(self, actor: Entity):
         """处理带 tick_trigger 的 BUFF（持续回合递减，过期移除）。"""
-        for buff in list(getattr(actor, "buffs", {}).values()):
+        for buff in getattr(actor, "buffs", []):
             bdef = self.buff_defs.get(buff.buff_id, {})
             tick_tr = bdef.get("tick_trigger")
             if tick_tr in ("on_turn_start", "on_turn_end"):
