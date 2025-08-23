@@ -41,7 +41,11 @@ def _load_monster_def(monster_id: str) -> Dict:
 
 # === 核心：跑一场 1v1（或 组队可拓展） ===
 def simulate_duel_with_skills(
-    player, monster_id: str, max_turns: int = 6, seed: int | None = None
+    player,
+    monster_id: str,
+    boss_hp: int = None,
+    max_turns: int = 6,
+    seed: int | None = None,
 ) -> Tuple[str, List[str]]:
     """
     事件驱动技能战斗（最小复现）：
@@ -55,7 +59,7 @@ def simulate_duel_with_skills(
     eng = SkillEngine(seed=seed)
     p_ent = player_to_entity(player)
     m_def = _load_monster_def(monster_id)
-    m_ent = monster_to_entity(m_def)
+    m_ent = monster_to_entity(m_def, hp=boss_hp)
 
     # 注入阵营
     p_ent.set_allies([p_ent])
@@ -88,6 +92,11 @@ def simulate_duel_with_skills(
     # 3) 开始（可选）战斗开始事件
     eng.emit("on_battle_start", p_ent)
     eng.emit("on_battle_start", m_ent)
+
+    print("【调试】玩家技能：", [s.id for s in getattr(p_ent, "skills", [])])
+    print("【调试】怪物技能：", [s.id for s in getattr(m_ent, "skills", [])])
+    print("【调试】玩家属性：", vars(p_ent))
+    print("【调试】怪物属性：", vars(m_ent))
 
     # 4) 回合循环
     actors = [p_ent, m_ent]
@@ -146,7 +155,7 @@ def simulate_duel_with_skills(
 
 
 def simulate_pvp_with_skills(
-    player_a, player_b, max_turns: int = 6, seed: int | None = None
+    player_a, player_b, max_turns: int = 20, seed: int | None = None
 ) -> tuple[str, list[str]]:
     """
     玩家 vs 玩家 技能战斗（事件驱动，支持技能/冷却/BUFF等）。

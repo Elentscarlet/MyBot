@@ -18,3 +18,13 @@
   INT: 2
   MAX_HP: 260
   CRIT: 0.1
+
+- id: 远古巨像
+  name: 远古巨像
+  tag: boss
+  ATK: 50
+  DEF: 0
+  AGI: 8      # spd 映射为 AGI
+  INT: 0
+  MAX_HP: 3000
+  CRIT: 0.1    # 10%暴击率，10/100=0.1

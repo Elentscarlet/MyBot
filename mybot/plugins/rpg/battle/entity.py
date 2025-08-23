@@ -77,10 +77,8 @@ class Entity:
 
     def take_damage(self, amount: int, source) -> int:
         amt = max(0, int(amount))
-        # 简化减伤：用 DEF 线性抵扣。需要时替换为你项目的公式。
-        mitigated = max(0, amt - self.stats.DEF)
         before = self._hp
-        self._hp = max(0, self._hp - mitigated)
+        self._hp = max(0, self._hp - amt)
         return before - self._hp
 
     def heal(self, amount: int, source):

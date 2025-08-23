@@ -21,6 +21,9 @@ def op_damage(
     power_expr = eff.get("power", "0")
     base = float(eval_fn(power_expr, scope))
 
+    # debug
+    print("[DEBUG] 怪物伤害scope:", scope)
+
     # 伤害随机波动（0~1，小数代表百分比）
     var = float(eff.get("variance", 0.0))
     if var > 0:
