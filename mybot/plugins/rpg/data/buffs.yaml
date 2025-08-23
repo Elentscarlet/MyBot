@@ -1,0 +1,10 @@
+- id: haste_buff
+  name: 迅捷
+  dispellable: true
+  duration_turns: 2
+  max_stacks: 3
+  tick_trigger: on_turn_start
+  tick_effects:
+    - op: stat_pct
+      stat: "agi"
+      value: 20

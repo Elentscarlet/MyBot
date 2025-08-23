@@ -1,0 +1,14 @@
+self: { select: "self" }
+
+enemy_single: { select: "enemy.single" }
+
+enemy_all: { select: "enemy.all" }
+
+source: { select: "context.source" }
+
+ally_lowest_hp:
+  select: "ally.lowest_hp"
+
+enemy_random_2:
+  select: "enemy.random"
+  n: 2

@@ -1,7 +1,0 @@
-buffs:
-  - id: haste
-    name: 迅捷
-    effect: { SPD%: 0.25 }
-    duration: 2
-    max_stacks: 1
-    dispellable: true

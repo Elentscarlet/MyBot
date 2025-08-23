@@ -1,0 +1,36 @@
+- id: heavy_strike
+  name: 重击
+  type: active
+  cost: { mp: 10 }
+  cd: 2
+  trigger: on_cast
+  target: enemy_single
+  effects:
+    - op: damage
+      power: "ATK * 1.2"
+      crit: true
+    - op: leech                   # 吸血：用上一条造成的伤害
+      ratio: 0.3
+
+- id: haste
+  name: 迅捷
+  type: active
+  cost: { mp: 5 }
+  cd: 3
+  trigger: on_cast
+  target: self
+  effects:
+    - op: add_buff
+      buff_id: haste_buff
+      stacks: 1
+
+- id: thorns
+  name: 荆棘
+  type: passive
+  trigger: on_receive_damage
+  target: source
+  conditions:
+    - expr: "incoming.damage > 0"
+  effects:
+    - op: damage
+      power: "DEF * 0.3"

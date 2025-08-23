@@ -13,6 +13,18 @@ import random
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Literal, Optional
 
+# 引入已编译的配表（见我之前给的 skill_config.py）
+from typing import Tuple  # 顺便修正类型注解需要
+
+try:
+    from .skill_config import COMPILED_SKILLS  # dict[str, SkillCfg]
+
+    HAVE_CFG = True
+except Exception:
+    COMPILED_SKILLS = {}
+    HAVE_CFG = False
+
+
 # ========= 数据结构 =========
 
 
@@ -157,6 +169,96 @@ def roll_damage(
     return dmg, crit
 
 
+# --- 配表 -> 运行时 Skill 适配（主动的 use 调用 actions，被动在 hooks 里跑 actions） ---
+def _run_actions(engine, user, target, actions: list, ctx: dict):
+    # 这里直接复用你已有的事件/伤害函数
+    # 如果你已实现 opcode 引擎（ACTIONS 字典），这里调用那个 run_actions 即可。
+    from .logic_skill import (
+        roll_damage,
+    )  # 如你用了更高级的 opcode 文件，请改成 from .logic_skill_config_runner import run_actions
+
+    for step in actions:
+        op = step.get("op")
+        if op == "damage":
+            mult = float(step.get("mult", 1.0))
+            dmg, crit = roll_damage(user, target, mult=mult)
+            target.hp -= dmg
+            ctx["damage"] = dmg
+            ctx["crit"] = crit
+            engine.emit(
+                "on_deal_damage", actor=user, target=target, damage=dmg, crit=crit
+            )
+            engine.emit(
+                "on_receive_damage", target=target, actor=user, damage=dmg, crit=crit
+            )
+        elif op == "add_buff":
+            bc = step.get("buff", {})
+            if bc:
+                b = Buff(
+                    id=bc["id"],
+                    name=bc["name"],
+                    effect=bc.get("effect", {}),
+                    duration=int(bc.get("duration", 1)),
+                    max_stacks=int(bc.get("max_stacks", 1)),
+                    dispellable=bool(bc.get("dispellable", True)),
+                    hooks={},
+                )
+                add_buff(target, b, engine.log)
+        elif op == "log":
+            txt = step.get("text", "")
+            s = txt.format(
+                actor=user.name,
+                target=target.name,
+                damage=ctx.get("damage", "-"),
+                crit_text="（暴击）" if ctx.get("crit") else "",
+            )
+            engine.log.append(s)
+        # ……（简化版演示）你也可以换成我之前给的完整 opcode 执行器
+
+
+def _build_runtime_skill_from_cfg(sid: str) -> Optional[Skill]:
+    cfg = COMPILED_SKILLS.get(sid)
+    if not cfg:
+        return None
+
+    # 主动技能：把 actions 包成一个 use 函数
+    def _use(user: Entity, target: Entity, engine: SkillEngine):
+        ctx = {"engine": engine}
+        _run_actions(
+            engine,
+            user,
+            target if cfg.target == "enemy" else user,
+            cfg.actions or [],
+            ctx,
+        )
+
+    # 被动/光环：把 hooks 映射为可执行函数
+    hooks = {}
+    if cfg.hooks:
+        for ev_name, actions in cfg.hooks.__dict__.items():
+            if not actions:
+                continue
+
+            def make_hook(_actions):
+                def _hook(ent: Entity, ctx: Dict):
+                    foe = ctx["engine"].foe_of(ent)
+                    _run_actions(ctx["engine"], ent, foe, _actions, ctx)
+
+                return _hook
+
+            hooks[ev_name] = make_hook(actions)
+
+    return Skill(
+        id=cfg.id,
+        name=cfg.name,
+        type=cfg.type,
+        cd=cfg.cd,
+        target=cfg.target,
+        use=_use if cfg.type == "active" else None,
+        hooks=hooks,
+    )
+
+
 # ========= 示例技能实现 =========
 
 
@@ -257,15 +359,44 @@ SKILL_LIBRARY = {
 }
 
 
-def equip_skills_for_player(player: Dict, ent: Entity):
-    """按照武器评分发技能（示例策略，可自定义）"""
-    slots = player["weapon"]["slots"]
+def equip_skills_for_player(player, ent: Entity):
+    """
+    优先：用 YAML 的 equip 规则分发到 skill IDs，再把 ID 构造成运行时 Skill。
+    回退：没有配表或没匹配到时，使用旧的 SKILL_LIBRARY 策略。
+    """
+    slots = (
+        getattr(player, "weapon").slots
+        if hasattr(player, "weapon")
+        else player["weapon"]["slots"]
+    )
     score = int(slots[0] * 1 + slots[1] * 2 + slots[2] * 3)
     ent.skills = []
     ent.cds = {}
-    # 被动：所有人初始给嗜血
+
+    # 1) 配表通道
+    if HAVE_CFG and COMPILED_SKILLS:
+        # 简单示例：硬编码几条阈值（如果你用了 equip.yaml，就在这里按 equip.yaml 去挑选 IDs）
+        ids = ["passive_berserk"]
+        if score >= 12:
+            ids.append("active_power")
+        if score >= 18:
+            ids.append("active_quick")
+        if score >= 20:
+            ids.append("passive_thorns")
+        if score >= 22:
+            ids.append("passive_lifesteal")
+
+        for sid in ids:
+            sk = _build_runtime_skill_from_cfg(sid)
+            if sk:
+                ent.skills.append(sk)
+                if sk.type == "active" and sk.cd > 0:
+                    ent.cds[sk.id] = 0
+        if ent.skills:
+            return  # 有配表技能就直接返回
+
+    # 2) 代码回退通道（旧的写死库）
     ent.skills.append(SKILL_LIBRARY["BERSERK"]())
-    # 评分阈值解锁
     if score >= 12:
         ent.skills.append(SKILL_LIBRARY["POWER_STRIKE"]())
         ent.cds["active_power"] = 0
