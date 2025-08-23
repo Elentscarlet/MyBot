@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11 import MessageEvent, Bot
-from ..models import get_player
 from ..logic_battle import derive_internal_stats, simulate_duel
+from ..models.player import get_player
 from ..utils import ids_of, first_at
 
 pvp_m = on_regex(r"^(对战|pk)")

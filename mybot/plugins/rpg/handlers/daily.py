@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from nonebot import on_keyword
 from nonebot.adapters.onebot.v11 import MessageEvent
-from ..models import get_player, put_player
 from ..logic_economy import gacha10_to_dust
+from ..models.player import get_player
 from ..utils import ids_of
 
 daily_m = on_keyword({"签到"})
@@ -17,7 +17,7 @@ async def _(event: MessageEvent):
     dust, stat = gacha10_to_dust()
     p["dust"] += dust
     p["counters"]["signed"] = True
-    put_player(p)
+    p.save()
     await daily_m.finish(
         f"签到成功：5★{stat['5★']} 4★{stat['4★']} 3★{stat['3★']} → 粉尘+{dust}"
     )

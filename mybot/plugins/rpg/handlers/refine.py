@@ -2,7 +2,9 @@
 import re
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11 import MessageEvent
-from ..models import get_player, put_player, refine_cost, slots_to_rank, score_of_slots
+
+from ..models.player import get_player
+from ..models.weapon import refine_cost, slots_to_rank, score_of_slots
 from ..utils import ids_of, text_of
 
 refine_m = on_regex(r"^精炼\s*([123])$")
@@ -22,7 +24,7 @@ async def _(event: MessageEvent):
         await refine_m.finish(f"粉尘不足，需要{cost}")
     p["dust"] -= cost
     p["weapon"]["slots"][idx - 1] = nxt
-    put_player(p)
+    p.save()
     slots = p["weapon"]["slots"]
     await refine_m.finish(
         f"精炼成功：段位{slots_to_rank(slots)}｜评分{score_of_slots(slots)}｜粉尘{p['dust']}"

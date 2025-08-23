@@ -2,7 +2,8 @@
 import re
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11 import MessageEvent
-from ..models import get_player, put_player
+
+from ..models.player import get_player
 from ..utils import ids_of, text_of
 
 rename_m = on_regex(r"^(起名|改名)\s*(.+)$")
@@ -15,5 +16,5 @@ async def _(event: MessageEvent):
     m = re.match(r"^(起名|改名)\s*(.+)$", text_of(event))
     new = m.group(2).strip()[:20]
     p["weapon"]["name"] = new
-    put_player(p)
+    p.save()
     await rename_m.finish(f"已改名：{new}")

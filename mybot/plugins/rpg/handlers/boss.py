@@ -2,8 +2,8 @@
 import re
 from nonebot import on_keyword
 from nonebot.adapters.onebot.v11 import MessageEvent
-from ..models import get_boss, put_boss, get_player, put_player
 from ..logic_battle import derive_internal_stats, simulate_duel
+from ..models.player import get_player
 from ..utils import ids_of
 
 boss_info_m = on_keyword({"boss", "BOSS", "世界boss", "世界BOSS"})
@@ -66,7 +66,7 @@ async def _(event: MessageEvent):
     p["diamond"] += dia
     p["dust"] += dus
     p["counters"]["boss_hits"] += 1
-    put_player(p)
+    p.save()
 
     await boss_hit_m.finish(
         f"{p['name']} 对BOSS造成 {dealt} 伤害\n"
