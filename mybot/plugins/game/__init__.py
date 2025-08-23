@@ -1,9 +1,9 @@
 from nonebot import get_plugin_config
-from nonebot.adapters.console.message import Message;
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent
+from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.plugin import PluginMetadata
-from nonebot.typing import T_State
-
+from nonebot.rule import to_me, keyword
+from nonebot.plugin import on_command
+from nonebot.plugin import on_keyword
 from .config import Config
 
 __plugin_meta__ = PluginMetadata(
@@ -12,9 +12,6 @@ __plugin_meta__ = PluginMetadata(
     usage="",
     config=Config,
 )
-from nonebot.rule import to_me, keyword
-from nonebot.plugin import on_command
-from nonebot.plugin import on_keyword
 
 weather = on_command("天气", rule=to_me(), aliases={"weather", "查天气"}, priority=10, block=True)
 @weather.handle()
