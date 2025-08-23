@@ -5,7 +5,10 @@ from typing import LiteralString
 
 import yaml
 
+from mybot.plugins.rpg.models import Player, put_player
 
+
+# 抽卡 ------------------------------------------------------------------
 def gacha10_to_dust() -> tuple[int, LiteralString]:
     root = pathlib.Path(__file__).resolve().parent  # .../rpg
     character_path = root / "data" / "character.yaml"
@@ -36,4 +39,27 @@ def gacha10_to_dust() -> tuple[int, LiteralString]:
             character_names.append(f"{star}★未知角色")
 
     dust = sum(600 if s == 5 else 120 if s == 4 else 30 for s in stars)
-    return dust, "本次抽卡结果：\n"+"\n".join(character_names)
+    return dust, "本次抽卡结果：\n" + "\n".join(character_names)
+
+
+# 钓鱼 ------------------------------------------------------------------
+
+
+
+def get_fish():
+    root = pathlib.Path(__file__).resolve().parent  # .../rpg
+    fish_path = root / "data" / "fish.yaml"
+    data = yaml.safe_load(fish_path.read_text(encoding="utf-8")) or []
+    r = random.random()
+    if r < data['prob']:
+        # 随机选择一条鱼
+        if data and 'list' in data and data['list']:
+            return random.choice(data['list'])
+        else:
+            return None
+    else:
+        return None
+
+
+if __name__ == "__main__":
+    fish = fishing()
