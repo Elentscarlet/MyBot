@@ -1,9 +1,6 @@
-from mybot.plugins.rpg.models.combat_unit import CombatUnit
-
-
-class Monster(CombatUnit):
+class Monster:
     def __init__(self, name: str):
-        super().__init__()
+        self.points = {"str": 0, "def": 0, "hp": 0, "agi": 0, "int": 0, "crit": 0}
         self.name = name
 
     def get_monster(self):

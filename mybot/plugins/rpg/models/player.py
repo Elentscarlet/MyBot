@@ -1,6 +1,5 @@
 from typing import Dict
 
-from .combat_unit import CombatUnit
 from .weapon import Weapon
 from mybot.plugins.rpg.storage import today_tag, load_players, save_players
 
@@ -23,12 +22,13 @@ def get_player(uid: str, gid: str, name: str):
 
     return player
 
-class Player(CombatUnit):
+class Player:
     def __init__(self, uid: str, gid: str, name: str):
         super().__init__()
         self.uid = uid
         self.gid = gid
         self.name = name
+        self.points = {"str": 0, "def": 0, "hp": 0, "agi": 0, "int": 0, "crit": 0}
         self.weapon = Weapon()
         #养成
         self.dust = 0
