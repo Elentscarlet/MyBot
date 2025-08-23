@@ -12,7 +12,11 @@ rename_m = on_regex(r"^(起名|改名)\s*(.+)$")
 async def _(event: MessageEvent):
     uid, gid, name = ids_of(event)
     p = get_player(uid, gid, name)
+
     m = re.match(r"^(起名|改名)\s*(.+)$", text_of(event))
+    if not m:
+        await rename_m.finish("格式不对，用法：起名 新名字")
+
     new_name = m.group(2).strip()[:20]
     p.weapon.name = new_name
     put_player(p)

@@ -10,19 +10,31 @@ from typing import Callable, Dict, Any
 # - try_crit()->bool
 
 
-def op_damage(
-    eff: Dict[str, Any], ctx, target, scope, eval_fn: Callable[[str, dict], float]
-):
+def op_damage(eff, ctx, target, scope, eval_fn):
+    # 基础伤害表达式（必填）
     power_expr = eff.get("power", "0")
-    amount = int(max(0, eval_fn(power_expr, scope)))
-    # 暴击
-    if eff.get("crit", False) and ctx.caster.try_crit():
-        amount = int(amount * 1.5)
-        ctx.payload["last_crit"] = True
-    else:
-        ctx.payload["last_crit"] = False
-    dealt = target.take_damage(amount, source=ctx.caster)
-    ctx.payload["last_damage"] = dealt  # 给后续效果（比如 leech）用
+    base = float(eval_fn(power_expr, scope))
+
+    # 伤害随机波动（0~1，小数代表百分比）
+    var = float(eff.get("variance", 0.0))
+    if var > 0:
+        import random
+
+        jitter = 1.0 + random.uniform(-var, var)
+        base *= jitter
+
+    dmg = max(1, int(base))
+
+    # 暴击（由实体提供 try_crit）
+    can_crit = bool(eff.get("can_crit", False))
+    if can_crit and hasattr(ctx.caster, "try_crit") and ctx.caster.try_crit():
+        crit_mult = float(eff.get("crit_mult", 1.5))
+        dmg = int(dmg * crit_mult)
+        ctx.payload["crit"] = True
+
+    # 扣血并记录“最后一次伤害”，便于后续效果读取
+    dealt = target.take_damage(dmg, source=ctx.caster)
+    ctx.payload["last_damage"] = dealt
 
 
 def op_heal(eff, ctx, target, scope, eval_fn):

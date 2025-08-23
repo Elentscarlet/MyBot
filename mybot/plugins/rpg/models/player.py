@@ -22,6 +22,15 @@ def get_player(uid: str, gid: str, name: str):
 
     return player
 
+
+def put_player(player: "Player") -> None:
+    """保存玩家到存储"""
+    players = load_players()
+    key = f"{player.gid}:{player.uid}"
+    players[key] = player.to_dict()
+    save_players(players)
+
+
 class Player:
     def __init__(self, uid: str, gid: str, name: str):
         super().__init__()
@@ -30,11 +39,11 @@ class Player:
         self.name = name
         self.points = {"str": 0, "def": 0, "hp": 0, "agi": 0, "int": 0, "crit": 0}
         self.weapon = Weapon()
-        #养成
+        # 养成
         self.dust = 0
-        #抽卡
+        # 抽卡
         self.diamond = 0
-        #属性点养成
+        # 属性点养成
         self.tear = 0
         self.counters = {
             "daily_date": today_tag(),
@@ -44,7 +53,7 @@ class Player:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'Player':
+    def from_dict(cls, data: Dict) -> "Player":
         """从字典创建Player实例"""
         player = cls(data["uid"], data["gid"], data["name"])
         player.points = data["points"]

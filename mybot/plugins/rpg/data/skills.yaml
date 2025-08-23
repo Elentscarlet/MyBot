@@ -34,3 +34,44 @@
   effects:
     - op: damage
       power: "DEF * 0.3"
+      
+- id: basic_attack
+  name: 普攻
+  type: active
+  cost: { mp: 0 }
+  cd: 0
+  trigger: on_cast
+  target: enemy_single
+  effects:
+    # 伤害 = max(1, ATK - 0.5*DEF) * 波动；是否暴击由实体.try_crit() 决定
+    - op: damage
+      power: "max(1, ATK - 0.5*DEF)"
+      variance: 0.05           # 可选：伤害±5%波动；由 effect_ops 支持
+      can_crit: true           # 可选：允许暴击；由 effect_ops 支持
+      crit_mult: 1.5
+
+- id: active_power
+  name: 力量打击
+  type: active
+  cost: { mp: 10 }
+  cd: 2
+  trigger: on_cast
+  target: enemy_single
+  effects:
+    - op: damage
+      power: "ATK * 1.2"
+      variance: 0.03
+      can_crit: true
+      crit_mult: 1.6
+
+- id: active_quick
+  name: 迅捷
+  type: active
+  cost: { mp: 6 }
+  cd: 3
+  trigger: on_cast
+  target: self
+  effects:
+    - op: add_buff
+      buff_id: haste_buff
+      stacks: 1
