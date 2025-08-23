@@ -5,8 +5,7 @@ from nonebot import on_keyword
 from nonebot.adapters.onebot.v11 import MessageEvent
 
 from ..models import get_boss, put_boss, get_player, put_player
-from ..logic_battle import derive_internal_stats, simulate_duel_with_skills
-from ..logic_skill import Entity
+from ..logic_battle import simulate_duel_with_skills
 from ..utils import ids_of
 
 # 技能装配：优先使用“配表技能”，若未启用则回退到内置
@@ -42,33 +41,14 @@ async def _(event: MessageEvent):
     if b.killed:
         await boss_hit_m.finish("今日BOSS已击杀")
 
-    # 面板（OOP）
-    p_stat = derive_internal_stats(p)
-    boss_stat = {"ATK": b.atk, "DEF": b.def_, "HP": b.hp, "SPD": b.spd, "CRIT": b.crit}
-
-    # 装备技能（玩家按配表；Boss可按需赋予或留空）
-    def equipP(ent: Entity):
-        equip_skills_for_player(p, ent)
-
-    def equipB(ent: Entity):
-        ent.skills = []  # 如需给Boss技能，可在配表中单独规则或这里手动追加
-        ent.cds = {}
-
-    # 模拟战斗
-    log, winner = simulate_duel_with_skills(
-        a_name=p.name,
-        a_stat=p_stat,
-        b_name=b.name,
-        b_stat=boss_stat,
-        equip_A=equipP,
-        equip_B=equipB,
-    )
+    # 直接用 boss 名称作为怪物ID，要求 monsters.yaml 里有同名boss定义
+    log, winner = simulate_duel_with_skills(p, monster_id=b.name)
 
     # 从战报回收本刀伤害
     before = b.hp
     last_left = None
-    for line in log.splitlines()[::-1]:
-        m = re.search(rf"{b.name} 剩 (\d+)", line)
+    for line in reversed(log.splitlines()):
+        m = re.search(rf"{b.name}.*剩[余:]?\s*(\d+)", line)
         if m:
             last_left = int(m.group(1))
             break

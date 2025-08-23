@@ -10,7 +10,13 @@ from typing import Callable, Dict, Any
 # - try_crit()->bool
 
 
-def op_damage(eff, ctx, target, scope, eval_fn):
+def op_damage(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
     # 基础伤害表达式（必填）
     power_expr = eff.get("power", "0")
     base = float(eval_fn(power_expr, scope))
@@ -36,36 +42,97 @@ def op_damage(eff, ctx, target, scope, eval_fn):
     dealt = target.take_damage(dmg, source=ctx.caster)
     ctx.payload["last_damage"] = dealt
 
+    # 新增：写入技能日志
+    # 兼容 SkillEngine.log
+    engine = getattr(ctx.caster, "engine", None)
+    if engine and hasattr(engine, "log"):
+        crit_str = "（暴击）" if ctx.payload.get("crit") else ""
+        engine.log.append(
+            f"{ctx.caster.name} 对 {target.name} 造成了 {dealt} 点伤害{crit_str}（剩余HP: {getattr(target, '_hp', '?')}）"
+        )
 
-def op_heal(eff, ctx, target, scope, eval_fn):
+
+def op_heal(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
     amount = int(max(0, eval_fn(eff.get("power", "0"), scope)))
     target.heal(amount, source=ctx.caster)
     ctx.payload["last_heal"] = amount
 
+    engine = getattr(ctx.caster, "engine", None)
+    if engine and hasattr(engine, "log"):
+        engine.log.append(
+            f"{ctx.caster.name} 治疗了 {target.name} {amount} 点HP（当前HP: {getattr(target, '_hp', '?')}）"
+        )
 
-def op_leech(eff, ctx, target, scope, eval_fn):
+
+def op_leech(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
     ratio = float(eff.get("ratio", 0))
     last = int(ctx.payload.get("last_damage", 0))
     if last > 0 and ratio > 0:
-        ctx.caster.heal(int(last * ratio), source=ctx.caster)
+        heal_amount = int(last * ratio)
+        ctx.caster.heal(heal_amount, source=ctx.caster)
+        engine = getattr(ctx.caster, "engine", None)
+        if engine and hasattr(engine, "log"):
+            engine.log.append(
+                f"{ctx.caster.name} 吸血回复了 {heal_amount} 点HP（当前HP: {getattr(ctx.caster, '_hp', '?')}）"
+            )
 
 
-def op_stat_pct(eff, ctx, target, scope, eval_fn):
+def op_stat_pct(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
     stat = eff["stat"].upper()
     val = float(eff["value"])
     target.add_stat_pct(stat, val)
+    engine = getattr(ctx.caster, "engine", None)
+    if engine and hasattr(engine, "log"):
+        engine.log.append(f"{target.name} 获得了 {stat} +{val * 100:.0f}% 的加成")
 
 
-def op_add_buff(eff, ctx, target, scope, eval_fn):
+def op_add_buff(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
     buff_id = eff["buff_id"]
     stacks = int(eff.get("stacks", 1))
     target.add_buff(buff_id, stacks, source=ctx.caster)
+    engine = getattr(ctx.caster, "engine", None)
+    if engine and hasattr(engine, "log"):
+        engine.log.append(f"{target.name} 获得了BUFF：{buff_id} ×{stacks}")
 
 
-def op_dispel(eff, ctx, target, scope, eval_fn):
-    target.dispel(
-        count=int(eff.get("count", 1)), positive=bool(eff.get("positive", True))
-    )
+def op_dispel(
+    eff: Dict[str, Any],
+    ctx: Any,
+    target: Any,
+    scope: Dict[str, Any],
+    eval_fn: Callable[[str, Dict[str, Any]], Any],
+) -> None:
+    count = int(eff.get("count", 1))
+    positive = bool(eff.get("positive", True))
+    target.dispel(count=count, positive=positive)
+    engine = getattr(ctx.caster, "engine", None)
+    if engine and hasattr(engine, "log"):
+        t = "正面" if positive else "负面"
+        engine.log.append(f"{target.name} 被驱散了{t}效果 ×{count}")
 
 
 EFFECT_OPS = {

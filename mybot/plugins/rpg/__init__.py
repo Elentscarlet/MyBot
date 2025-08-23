@@ -14,3 +14,4 @@ from .handlers import wild  # noqa: F401
 from .handlers import pvp  # noqa: F401
 from .handlers import boss  # noqa: F401
 from .handlers import fishing  # noqa: F401
+from .handlers import redistribute  # noqa: F401

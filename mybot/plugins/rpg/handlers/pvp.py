@@ -3,8 +3,7 @@ from nonebot import on_regex
 from nonebot.adapters.onebot.v11 import MessageEvent, Bot
 
 from ..models import get_player
-from ..logic_battle import derive_internal_stats, simulate_duel_with_skills
-from ..logic_skill import Entity
+from ..logic_battle import simulate_pvp_with_skills
 from ..utils import ids_of, first_at
 
 # 优先使用“配表技能”的装备函数；若不存在则回落到内置 equip_skills_for_player
@@ -30,23 +29,11 @@ async def _(event: MessageEvent, bot: Bot):
     info = await bot.get_group_member_info(group_id=int(gid), user_id=int(target))
     b = get_player(target, gid, info.get("card") or info.get("nickname") or target)
 
-    a_stat = derive_internal_stats(a)
-    b_stat = derive_internal_stats(b)
+    # 为双方实体装配技能
+    # （如果你的 simulate_pvp_with_skills 内部未自动装配技能，可以在此处手动装配）
+    # equip_skills_for_player(a, ...)  # 如有需要
+    # equip_skills_for_player(b, ...)  # 如有需要
 
-    # 为实体装配技能（基于玩家武器评分）
-    def equipA(ent: Entity):
-        equip_skills_for_player(a, ent)
-
-    def equipB(ent: Entity):
-        equip_skills_for_player(b, ent)
-
-    log, _ = simulate_duel_with_skills(
-        a_name=a.name,
-        a_stat=a_stat,
-        b_name=b.name,
-        b_stat=b_stat,
-        equip_A=equipA,
-        equip_B=equipB,
-    )
-
-    await pvp_m.finish(log)
+    # 使用新版PVP接口
+    result, logs = simulate_pvp_with_skills(a, b)
+    await pvp_m.finish("\n".join(logs))
