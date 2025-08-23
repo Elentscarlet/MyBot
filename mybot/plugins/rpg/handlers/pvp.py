@@ -4,7 +4,6 @@ from nonebot.adapters.onebot.v11 import MessageEvent, Bot
 
 from ..logic_battle import derive_internal_stats, simulate_duel_with_skills
 from ..logic_skill import Entity, equip_skills_for_player
-from ..logic_battle import derive_internal_stats, simulate_duel
 from ..models.player import get_player
 from ..utils import ids_of, first_at
 
