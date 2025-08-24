@@ -27,29 +27,34 @@ def player_to_entity(player) -> Entity:
     weapon_score = getattr(player.weapon, "score", 0)
     base = {
         "ATK": BASE_STATS["ATK"]
-        + getattr(player.points, "str", 0)
-        + weapon_score * WEAPON_SCORE_COEF["ATK"],
+               + getattr(player.points, "str", 0)
+               + getattr(player.extra_points, "str", 0)
+               + weapon_score * WEAPON_SCORE_COEF["ATK"],
         "DEF": BASE_STATS["DEF"]
-        + getattr(player.points, "def", 0)
-        + weapon_score * WEAPON_SCORE_COEF["DEF"],
+               + getattr(player.points, "def", 0)
+               + getattr(player.extra_points, "def", 0)
+               + weapon_score * WEAPON_SCORE_COEF["DEF"],
         "AGI": BASE_STATS["AGI"]
-        + getattr(player.points, "agi", 0)
-        + weapon_score * WEAPON_SCORE_COEF["AGI"],
+               + getattr(player.points, "agi", 0)
+               + getattr(player.extra_points, "agi", 0)
+               + weapon_score * WEAPON_SCORE_COEF["AGI"],
         "INT": BASE_STATS["INT"]
-        + getattr(player.points, "int", 0)
-        + weapon_score * WEAPON_SCORE_COEF["INT"],
+               + getattr(player.points, "int", 0)
+               + getattr(player.extra_points, "int", 0)
+               + weapon_score * WEAPON_SCORE_COEF["INT"],
         "MAX_HP": (
-            BASE_STATS["HP"]
-            + getattr(player.points, "hp", 0)
-            + weapon_score * WEAPON_SCORE_COEF["HP"]
-        )
-        * 10,
+                          BASE_STATS["HP"]
+                          + getattr(player.points, "hp", 0)
+                          + getattr(player.extra_points, "hp", 0)
+                          + weapon_score * WEAPON_SCORE_COEF["HP"]
+                  )
+                  * 10,
         "CRIT": min(
             1.0,
             max(
                 0.0,
                 BASE_STATS["CRIT"]
-                + getattr(player.points, "crit", 0) / 100.0
+                + (getattr(player.points, "crit", 0) + getattr(player.extra_points, "crit", 0)) / 100.0
                 + weapon_score * WEAPON_SCORE_COEF["CRIT"],
             ),
         ),

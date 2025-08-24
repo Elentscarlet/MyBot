@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 from typing import Dict, List
+
+import numpy as np
+
 from .storage import today_tag, load_players, save_players, load_boss_map, save_boss_map
 
 RANK_VAL = {"C": 1, "B": 2, "A": 3, "S": 4}
@@ -75,7 +78,17 @@ class Weapon:
             return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨"
         p.dust -= cost
         # 权重设置：数字越大，权重越小
-        random_list = random.choices([1, 2, 3, 4], weights=[4, 3, 2, 1], k=3)
+        weights_matrix = [
+            [45, 47, 48],
+            [49, 49, 49],
+            [5, 3, 2.5],
+            [1, 1, 0.5]
+        ]
+        weights_array = np.array(weights_matrix)
+        random_list = []
+        for i in range(3):
+            result = random.choices([1, 2, 3, 4], weights=weights_array[:, i], k=1)[0]
+            random_list.append(result)
         new_score = slots_score(random_list)
         if new_score > self.score:
             self.slots = random_list
@@ -91,7 +104,7 @@ class Weapon:
         return {"name": self.name, "slots": self.slots}
 
     def cal_dust_consume(self):
-        return int(10 * 2 ** ((self.score - 6) / 2))
+        return 300
 
 
 @dataclass
@@ -136,6 +149,7 @@ class Player:
     level: int = 1
     unspent: int = 0
     points: Points = field(default_factory=Points)
+    extra_points: Points = field(default_factory=lambda: Points(str=0, def_=0, hp=0, agi=0, crit=0))
     weapon: Weapon = field(default_factory=Weapon)
     dust: int = 0
     diamond: int = 0
@@ -173,6 +187,7 @@ class Player:
             level=d.get("level", 1),
             unspent=d.get("unspent", 0),
             points=Points.from_dict(d.get("points", {})),
+            extra_points=Points.from_dict(d.get("extra_points", {})),
             weapon=Weapon.from_dict(d.get("weapon", {})),
             dust=d.get("dust", 0),
             diamond=d.get("diamond", 0),
@@ -188,12 +203,67 @@ class Player:
             "level": self.level,
             "unspent": self.unspent,
             "points": self.points.to_dict(),
+            "extra_points": self.extra_points.to_dict(),
             "weapon": self.weapon.to_dict(),
             "dust": self.dust,
             "diamond": self.diamond,
             "tear": self.tear,
             "counters": self.counters.to_dict(),
         }
+
+    def extra_distribute(self, attribute: str):
+        if attribute == "力量":
+            self.extra_points.str += 1
+        elif attribute == "防御":
+            self.extra_points.def_ += 1
+        elif attribute == "体力":
+            self.extra_points.hp += 1
+        elif attribute == "敏捷":
+            self.extra_points.agi += 1
+        elif attribute == "暴击":
+            self.extra_points.crit += 1
+        else:
+            pass
+        self.tear = max(self.tear - 1, 0)
+        put_player(self)
+
+    def get_profile(self) -> str:
+        detail = []
+
+        # 标题
+        detail.append(f"【 {self.name} 的角色面板 】")
+        detail.append("")
+
+        # 武器区域
+        detail.append(f"╭─ 武器 ─{'─' * 30}")
+        detail.append(f"│ {self.weapon.name} {self.weapon.rank}级)")
+        detail.append(f"│ 评分: {self.weapon.score}")
+        detail.append("")
+
+        # 属性区域
+        detail.append(f"╭─ 属性加点 ─{'─' * 27}")
+        detail.append(f"│ 力: {self.points.str}(+{self.extra_points.str})")
+        detail.append(f"│ 防: {self.points.def_}(+{self.extra_points.def_})")
+        detail.append(f"│ 血: {self.points.hp}(+{self.extra_points.hp})")
+        detail.append(f"│ 敏: {self.points.agi}(+{self.extra_points.agi})")
+        detail.append(f"│ 暴: {self.points.crit}(+{self.extra_points.crit})")
+        detail.append("")
+
+        # 资源区域
+        detail.append(f"╭─ 资源 ─{'─' * 30}")
+        detail.append(f"│ 粉尘: {self.dust}✨")
+        detail.append(f"│ 钻石: {self.diamond}💎")
+        detail.append(f"│ 女神之泪: {self.tear}💧")
+        detail.append("")
+
+        # 活动区域
+        detail.append(f"╭─ 今日活动 ─{'─' * 27}")
+        detail.append(f"│ 远征: {self.counters.free_explore_used}/2")
+        detail.append(f"│ 出刀: {self.counters.boss_hits}/3")
+        detail.append(f"│ 签到: {'✅' if self.counters.signed else '❌'}")
+        detail.append("╰" + "─" * 36)
+
+        return "\n".join(detail)
 
 
 @dataclass
