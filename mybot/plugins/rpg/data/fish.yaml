@@ -1,5 +1,6 @@
 #钓到鱼的概率
-prob: 0.5
+prob: 0.8
+pool_size: 10
 list:
   - name: 花鳉
     min_size: 4

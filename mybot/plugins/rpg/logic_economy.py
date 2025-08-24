@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pathlib
 import random
+import time
+from collections import defaultdict
 from typing import LiteralString
 
 import yaml
@@ -43,23 +45,69 @@ def gacha10_to_dust() -> tuple[int, LiteralString]:
 
 
 # 钓鱼 ------------------------------------------------------------------
+# 存储每个群组的钓鱼计数器和最后重置时间
+fishing_counters = defaultdict(int)
+last_reset_times = defaultdict(float)
 
 
+def get_counter(gid):
+    current_time = time.time()
+    last_reset = last_reset_times[gid]
 
-def get_fish():
+    # 检查是否需要重置（每小时重置）
+    if current_time - last_reset >= 7200:  # 3600秒 = 1小时
+        fishing_counters[gid] = 0
+        last_reset_times[gid] = current_time
+
+    return fishing_counters[gid]
+
+
+def increment_counter(gid):
+    """增加计数器值"""
+    fishing_counters[gid] += 1
+    return fishing_counters[gid]
+
+
+def get_pool_prob(count, size):
+    return 1 - (count / size) ** 3
+
+
+def get_fish(gid):
     root = pathlib.Path(__file__).resolve().parent  # .../rpg
     fish_path = root / "data" / "fish.yaml"
-    data = yaml.safe_load(fish_path.read_text(encoding="utf-8")) or []
+    data = yaml.safe_load(fish_path.read_text(encoding="utf-8")) or {}
+
+    count = get_counter(gid)
+    pool_size = data.get('pool_size', 10)
+
+    # 计算概率
+    probability = data.get('prob', 0) * get_pool_prob(count, pool_size)
     r = random.random()
-    if r < data['prob']:
+
+    # 判断是否成功钓到鱼
+    if r < probability:
+        # 钓到鱼的情况：计数器增加，剩余鱼数减少
+        increment_counter(gid)
+        remaining_fish = pool_size - (count + 1)  # 钓到鱼后剩余数量
+
+        pool_msg = f"池塘里还剩下[{remaining_fish}]条鱼。"
+        if remaining_fish == 0:
+            pool_msg += "这里已经没有鱼了，去别处试一试吧~"
+        elif probability < 0.2:
+            pool_msg += "这里的鱼已经很警惕了，去别处试一试吧~"
+
         # 随机选择一条鱼
-        if data and 'list' in data and data['list']:
-            return random.choice(data['list'])
-        else:
-            return None
+        if data.get('list'):
+            return [random.choice(data['list']), pool_msg]
+        raise Exception("鱼类信息获取错误")
     else:
-        return None
+        # 没钓到鱼的情况：计数器不变，剩余鱼数不变
+        remaining_fish = pool_size - count  # 剩余数量不变
 
+        pool_msg = f"池塘里还剩下[{remaining_fish}]条鱼。"
+        if remaining_fish == 0:
+            pool_msg += "这里已经没有鱼了，去别处试一试吧~"
+        elif probability < 0.2:
+            pool_msg += "这里的鱼已经很警惕了，去别处试一试吧~"
 
-if __name__ == "__main__":
-    fish = fishing()
+        return [None, pool_msg]
