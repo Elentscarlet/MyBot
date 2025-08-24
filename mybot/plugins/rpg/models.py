@@ -140,7 +140,6 @@ class Player:
     dust: int = 0
     diamond: int = 0
     tear: int = 0
-    ticket: int = 0
     counters: Counters = field(default_factory=Counters.today)
 
     # ---- 兼容层（短期让 p["diamond"] 还能用）----
@@ -178,7 +177,6 @@ class Player:
             dust=d.get("dust", 0),
             diamond=d.get("diamond", 0),
             tear=d.get("tear", 0),
-            ticket=d.get("ticket", 0),
             counters=Counters.from_dict(d.get("counters", {})),
         )
 
@@ -194,7 +192,6 @@ class Player:
             "dust": self.dust,
             "diamond": self.diamond,
             "tear": self.tear,
-            "ticket": self.ticket,
             "counters": self.counters.to_dict(),
         }
 
