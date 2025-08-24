@@ -43,7 +43,7 @@ def _load_monster_def(monster_id: str) -> Dict:
 def simulate_duel_with_skills(
     player,
     monster_id: str,
-    boss_hp: int = None,
+    boss_hp: int | None = None,
     max_turns: int = 6,
     seed: int | None = None,
 ) -> Tuple[str, List[str]]:

@@ -4,26 +4,18 @@ from typing import Dict, Any, Optional
 
 import yaml
 from nonebot.adapters.onebot.v11 import MessageEvent, Bot
-from nonebot.plugin.on import on_regex, on_keyword
-from nonebot_plugin_apscheduler import scheduler
+from nonebot.plugin.on import on_keyword
 
 from mybot.plugins.rpg.models import get_player
 from mybot.plugins.rpg.penalty_manager import PenaltyManager
 from mybot.plugins.rpg.utils import ids_of, first_at
 
 
-@scheduler.scheduled_job("interval", minutes=5)
-async def cleanup_penalties():
-    print("cleanup_penalties")
-    """定时清理过期惩罚"""
-    penalty_manager.cleanup_expired_penalties()
-
-
 # 加载配置文件
 def load_rob_config():
     root = pathlib.Path(__file__).resolve().parent.parent  # .../rpg
     config_path = root / "data" / "rob_events.yaml"
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -35,9 +27,9 @@ class RobFailureManager:
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.failure_events = config['failure_events']
-        self.failure_penalties = config['failure_penalties']
-        self.event_weights = config['event_weights']
+        self.failure_events = config["failure_events"]
+        self.failure_penalties = config["failure_penalties"]
+        self.event_weights = config["event_weights"]
 
     def get_random_failure_event(self) -> str:
         """根据权重获取随机失败事件"""
@@ -55,9 +47,11 @@ class RobFailureManager:
         probabilities = []
 
         for penalty in self.failure_penalties:
-            probabilities.append(penalty['probability'])
+            probabilities.append(penalty["probability"])
 
-        selected_penalty = random.choices(self.failure_penalties, weights=probabilities, k=1)[0]
+        selected_penalty = random.choices(
+            self.failure_penalties, weights=probabilities, k=1
+        )[0]
         print(selected_penalty)
         return selected_penalty
 
@@ -98,7 +92,7 @@ async def handle_rob(event: MessageEvent, bot: Bot):
     b = get_player(target, gid, info.get("card") or info.get("nickname") or target)
 
     # 模拟抢夺结果
-    success = random.random() < rob_config['base_config']['success_rate']
+    success = random.random() < rob_config["base_config"]["success_rate"]
 
     amount = random.randint(1, 100)
     if success:
@@ -114,24 +108,23 @@ async def handle_rob(event: MessageEvent, bot: Bot):
         failure_event = failure_manager.get_random_failure_event()
         penalty_data = failure_manager.get_random_penalty()
 
-        result_message = (
-            f"❌ 抢夺失败！\n"
-            f"{name} {failure_event}"
-        )
+        result_message = f"❌ 抢夺失败！\n" f"{name} {failure_event}"
         # 应用惩罚效果
-        penalty_type = penalty_data['type']
-        effect = penalty_data['effect']
-        if penalty_type == 'cooldown':
+        penalty_type = penalty_data["type"]
+        effect = penalty_data["effect"]
+        if penalty_type == "cooldown":
             # 时间惩罚
-            duration = effect['duration']
+            duration = effect["duration"]
             penalty_text = penalty_manager.apply_time_penalty(uid, duration)
             result_message += f"\n{penalty_text}"
-        elif penalty_type == 'blacklist':
+        elif penalty_type == "blacklist":
             # 黑名单惩罚
-            duration = effect['duration']
-            penalty_text = penalty_manager.apply_blacklist_penalty(uid, target, duration)
+            duration = effect["duration"]
+            penalty_text = penalty_manager.apply_blacklist_penalty(
+                uid, target, duration
+            )
             result_message += f"\n{penalty_text}"
-        elif penalty_type == 'diamond':
+        elif penalty_type == "diamond":
             _, penalty_text = penalty_manager.apply_diamond_penalty(a, b, amount)
             result_message += f"\n{penalty_text}"
         else:

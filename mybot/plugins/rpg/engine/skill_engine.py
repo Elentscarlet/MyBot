@@ -77,15 +77,24 @@ class SkillEngine:
             self.equip_rules = list(equip.get("rules", []))
 
     # ---------- 装备→技能规则 ----------
-    def match_equip_rules(self, score: int) -> List[str]:
-        """根据 score 按 equip.yaml 产出技能 ID 列表（按出现顺序去重累积）。"""
-        out: List[str] = []
+    def match_equip_rules_by_points(self, points) -> List[str]:
+        """
+        根据玩家属性 points 匹配技能ID列表。
+        points: 支持对象（有 .str/.agi/...）或 dict
+        """
+        out: list[str] = []
         seen = set()
         for r in self.equip_rules:
             cond = r.get("when", {})
-            gte = int(cond.get("score_gte", -(10**9)))
-            lte = int(cond.get("score_lte", 10**9))
-            if gte <= score <= lte:
+            ok = True
+            for k, v in cond.items():
+                if k.endswith("_gte"):
+                    attr = k[:-4]
+                    val = getattr(points, attr, None)
+                    if val is None or val < v:
+                        ok = False
+                        break
+            if ok:
                 for sid in r.get("give", []):
                     if sid not in seen:
                         out.append(sid)

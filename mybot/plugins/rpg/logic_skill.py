@@ -53,14 +53,13 @@ def equip_skills_for_player(player: Any, ent: Entity) -> None:
     # 引擎引用：约定实体在入队/入场时由上层注入 .engine
     if not hasattr(ent, "engine") or ent.engine is None:
         raise RuntimeError("Entity.engine 未注入 SkillEngine，无法配发技能。")
-
     eng: SkillEngine = ent.engine  # type: ignore
 
-    # 1) 计算分值
-    score = score_from_weapon(player)
+    # 1) 取玩家属性
+    points = getattr(player, "points", None)
 
-    # 2) 按 equip.yaml 规则产出技能ID列表
-    skill_ids: List[str] = eng.match_equip_rules(score)
+    # 2) 按属性匹配技能ID
+    skill_ids: List[str] = eng.match_equip_rules_by_points(points)
 
     # 3) 根据 ID 构造运行期技能
     ent.skills = getattr(ent, "skills", [])

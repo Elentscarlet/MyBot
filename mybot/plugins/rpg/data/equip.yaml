@@ -1,12 +1,15 @@
 rules:
-  # 根据武器评分发技能
-  - when: { score_gte: 12 }
+  # 力量大于等于12给主动技
+  - when: { str_gte: 8 }
     give: [active_power]
-  - when: { score_gte: 18 }
+  # 敏捷大于等于10给主动技
+  - when: { agi_gte: 8 }
     give: [active_quick]
-  - when: { score_gte: 20 }
+  # 防御大于等于10给被动
+  - when: { def_gte: 8 }
     give: [passive_thorns]
-  - when: { score_gte: 22 }
+  # 体力大于等于12给被动
+  - when: { hp_gte: 8 }
     give: [passive_lifesteal]
 
 # 每个人默认被动
