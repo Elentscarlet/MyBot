@@ -232,36 +232,31 @@ class Player:
 
         # 标题
         detail.append(f"【 {self.name} 的角色面板 】")
-        detail.append("")
 
         # 武器区域
-        detail.append(f"╭─ 武器 ─{'─' * 30}")
-        detail.append(f"│ {self.weapon.name} {self.weapon.rank}级)")
+        detail.append(f"╭─ 武器 ─{'─' * 7}")
+        detail.append(f"│ {self.weapon.name} {self.weapon.rank}级")
         detail.append(f"│ 评分: {self.weapon.score}")
-        detail.append("")
 
         # 属性区域
-        detail.append(f"╭─ 属性加点 ─{'─' * 27}")
+        detail.append(f"╭─ 属性 ─{'─' * 7}")
         detail.append(f"│ 力: {self.points.str}(+{self.extra_points.str})")
         detail.append(f"│ 防: {self.points.def_}(+{self.extra_points.def_})")
         detail.append(f"│ 血: {self.points.hp}(+{self.extra_points.hp})")
         detail.append(f"│ 敏: {self.points.agi}(+{self.extra_points.agi})")
         detail.append(f"│ 暴: {self.points.crit}(+{self.extra_points.crit})")
-        detail.append("")
 
         # 资源区域
-        detail.append(f"╭─ 资源 ─{'─' * 30}")
+        detail.append(f"╭─ 资源 ─{'─' * 7}")
         detail.append(f"│ 粉尘: {self.dust}✨")
         detail.append(f"│ 钻石: {self.diamond}💎")
         detail.append(f"│ 女神之泪: {self.tear}💧")
-        detail.append("")
 
         # 活动区域
-        detail.append(f"╭─ 今日活动 ─{'─' * 27}")
+        detail.append(f"╭─ 活动 ─{'─' * 7}")
         detail.append(f"│ 远征: {self.counters.free_explore_used}/2")
         detail.append(f"│ 出刀: {self.counters.boss_hits}/3")
         detail.append(f"│ 签到: {'✅' if self.counters.signed else '❌'}")
-        detail.append("╰" + "─" * 36)
 
         return "\n".join(detail)
 
