@@ -240,11 +240,11 @@ class Player:
 
         # 属性区域
         detail.append(f"╭─ 属性 ─{'─' * 7}")
-        detail.append(f"│ 力: {self.points.str}(+{self.extra_points.str})")
-        detail.append(f"│ 防: {self.points.def_}(+{self.extra_points.def_})")
-        detail.append(f"│ 血: {self.points.hp}(+{self.extra_points.hp})")
-        detail.append(f"│ 敏: {self.points.agi}(+{self.extra_points.agi})")
-        detail.append(f"│ 暴: {self.points.crit}(+{self.extra_points.crit})")
+        detail.append(f"│ 力量: {self.points.str}(+{self.extra_points.str})")
+        detail.append(f"│ 防御: {self.points.def_}(+{self.extra_points.def_})")
+        detail.append(f"│ 体力: {self.points.hp}(+{self.extra_points.hp})")
+        detail.append(f"│ 敏捷: {self.points.agi}(+{self.extra_points.agi})")
+        detail.append(f"│ 暴击: {self.points.crit}(+{self.extra_points.crit})")
 
         # 资源区域
         detail.append(f"╭─ 资源 ─{'─' * 7}")
@@ -259,6 +259,15 @@ class Player:
         detail.append(f"│ 签到: {'✅' if self.counters.signed else '❌'}")
 
         return "\n".join(detail)
+
+
+    def get_point_detail(self) -> str:
+        detail = [f"力量: {self.points.str}(+{self.extra_points.str})",
+                  f" │ 防御: {self.points.def_}(+{self.extra_points.def_})",
+                  f" │ 体力: {self.points.hp}(+{self.extra_points.hp})",
+                  f" │ 敏捷: {self.points.agi}(+{self.extra_points.agi})",
+                  f" │ 暴击: {self.points.crit}(+{self.extra_points.crit})"]
+        return "".join(detail)
 
 
 @dataclass

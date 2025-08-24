@@ -68,4 +68,4 @@ async def _(event: MessageEvent):
     # 处理有效的属性升级
     p.extra_distribute(attribute)
 
-    await cmd_distribute.finish(f"升级完成！")
+    await cmd_distribute.finish(f"升级完成！当前属性:\n" + p.get_point_detail())
