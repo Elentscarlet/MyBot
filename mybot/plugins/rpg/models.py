@@ -1,5 +1,7 @@
 # mybot/plugins/rpg/models.py
 from __future__ import annotations
+
+import random
 from dataclasses import dataclass, asdict, field
 from typing import Dict, List
 from .storage import today_tag, load_players, save_players, load_boss_map, save_boss_map
@@ -67,20 +69,19 @@ class Weapon:
     def rank(self) -> str:
         return slots_rank(self.slots)
 
-    def refine(self, idx: int, dust_wallet: Dict[str, int]) -> str:
-        """idx: 1/2/3；dust_wallet 提供 { "dust": 当前粉尘 } 并就地扣减"""
-        if idx not in (1, 2, 3):
-            return "槽位只支持 1/2/3"
-        cur = self.slots[idx - 1]
-        if cur >= 4:
-            return "该槽位已是S"
-        nxt = cur + 1
-        cost = refine_cost(nxt)
-        if dust_wallet["dust"] < cost:
-            return f"粉尘不足，需要{cost}"
-        dust_wallet["dust"] -= cost
-        self.slots[idx - 1] = nxt
-        return f"精炼成功：{self.rank}｜评分{self.score}｜粉尘{dust_wallet['dust']}"
+    def refine(self, p: Player) -> tuple[bool, str]:
+        cost = self.cal_dust_consume()
+        if cost > p.dust:
+            return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨"
+        p.dust -= cost
+        # 权重设置：数字越大，权重越小
+        random_list = random.choices([1, 2, 3, 4], weights=[4, 3, 2, 1], k=3)
+        new_score = slots_score(random_list)
+        if new_score > self.score:
+            self.slots = random_list
+            return True, f"「精炼成功」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨"
+        else:
+            return True, f"「精炼失败」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨"
 
     @staticmethod
     def from_dict(d: Dict) -> "Weapon":
@@ -88,6 +89,9 @@ class Weapon:
 
     def to_dict(self) -> Dict:
         return {"name": self.name, "slots": self.slots}
+
+    def cal_dust_consume(self):
+        return int(10 * 2 ** ((self.score - 6) / 2))
 
 
 @dataclass
