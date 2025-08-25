@@ -1,14 +1,17 @@
 rules:
-  # 力量大于等于12给主动技
+  # 默认拥有普通攻击
+  - when: { str_gte: 0}
+    give: [basic_attack]
+  # 力量大于等于8给主动技
   - when: { str_gte: 8 }
     give: [active_power]
-  # 敏捷大于等于10给主动技
+  # 敏捷大于等于8给主动技
   - when: { agi_gte: 8 }
     give: [active_quick]
-  # 防御大于等于10给被动
-  - when: { def_gte: 8 }
+  # 防御大于等于8给被动
+  - when: { def__gte: 8 }
     give: [passive_thorns]
-  # 体力大于等于12给被动
+  # 体力大于等于8给被动
   - when: { hp_gte: 8 }
     give: [passive_lifesteal]
 

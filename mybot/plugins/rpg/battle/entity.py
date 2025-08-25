@@ -1,6 +1,6 @@
 # mybot/plugins/rpg/battle/entity.py
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import random
 
 
@@ -29,22 +29,85 @@ class Entity:
         self.name = name
         self.tag = tag  # player/monster/boss等
         # 基础面板（不随战斗变化）
-        self._base = {
-            "ATK": int(base_stats.get("ATK", 0)),
-            "DEF": int(base_stats.get("DEF", 0)),
-            "AGI": int(base_stats.get("AGI", 0)),
-            "INT": int(base_stats.get("INT", 0)),
-            "CRIT": float(base_stats.get("CRIT", 0.0)),  # 0~1
-            "MAX_HP": int(base_stats.get("MAX_HP", 1)),
-        }
+        self.ATK = base_stats["ATK"]
+        self.DEF = base_stats["DEF"]
+        self.AGI = base_stats["AGI"]
+        self.CRIT = base_stats["CRIT"]
+        self.HP = base_stats["MAX_HP"]
+
         # 战斗期可变状态
-        self._hp = self._base["MAX_HP"]
         self._temp_pct: Dict[str, float] = {}  # 例如 {"AGI": +20.0}
-        self.buffs: List[BuffState] = []
+        self.is_alive = True
+        self.skills: List[Any] = []
+        self.buffs: Dict[str, Any] = {}
+        self.debuffs: Dict[str, Any] = {}
         # 编队信息
         self._enemies: List["Entity"] = []
         self._allies: List["Entity"] = []
         self._rng = random.Random()
+        # 技能引擎
+        self.engine = None
+
+
+    # ===============适配新系统=============
+    def take_damage(self, damage: float, damage_type: str, source: 'Entity' = None) -> float:
+        """受到伤害"""
+        if not self.is_alive:
+            return 0
+
+        # 计算实际伤害（考虑防御等）
+        actual_damage = max(0, int(damage - self.DEF * 0.3))
+        self.HP = max(0, self.HP - actual_damage)
+
+        # 检查死亡
+        if self.HP <= 0:
+            self.is_alive = False
+            self.HP = 0
+
+        return actual_damage
+
+    def heal(self, amount: float) -> float:
+        """接受治疗"""
+        if not self.is_alive:
+            return 0
+
+        actual_heal = min(amount, self.MAX_HP - self.HP)
+        self.HP += actual_heal
+
+        return actual_heal
+
+    def add_buff(self, buff_id: str, duration: int):
+        """添加增益效果"""
+        self.buffs[buff_id] = duration
+
+    def add_debuff(self, debuff_id: str, duration: int):
+        """添加减益效果"""
+        self.debuffs[debuff_id] = duration
+
+    def update_buffs(self):
+        """更新Buff持续时间"""
+        for buff_id in list(self.buffs.keys()):
+            self.buffs[buff_id] -= 1
+            if self.buffs[buff_id] <= 0:
+                del self.buffs[buff_id]
+
+        for debuff_id in list(self.debuffs.keys()):
+            self.debuffs[debuff_id] -= 1
+            if self.debuffs[debuff_id] <= 0:
+                del self.debuffs[debuff_id]
+
+    def update_skill_cooldowns(self):
+        """更新技能冷却"""
+        for skill in self.skills:
+            if hasattr(skill, 'update_cooldown'):
+                skill.update_cooldown()
+
+    def is_skill_ready(self, skill_id: str) -> bool:
+        """检查技能是否冷却完成"""
+        for skill in self.skills:
+            if hasattr(skill, 'id') and skill.id == skill_id:
+                return skill.current_cooldown <= 0
+        return False
 
     # ===== 组队/选目标 =====
     def set_enemies(self, enemies: List["Entity"]):
@@ -57,7 +120,7 @@ class Entity:
         return [e for e in self._enemies if e.is_alive()]
 
     def pick_enemy_single(
-        self, rng: Optional[random.Random] = None
+            self, rng: Optional[random.Random] = None
     ) -> Optional["Entity"]:
         pool = self.list_enemies()
         if not pool:
@@ -75,14 +138,13 @@ class Entity:
     def try_crit(self) -> bool:
         return self._rng.random() < self.stats.CRIT
 
-    def take_damage(self, amount: int, source) -> int:
-        amt = max(0, int(amount))
-        before = self._hp
-        self._hp = max(0, self._hp - amt)
-        return before - self._hp
+    def cal_damage(self, amount: int) -> int:
+        # TODO 后续修改防御力计算公式
+        dmg = max(0, amount - int(self._base.get("DEF", 0) * 0.2))
+        return dmg
 
     def heal(self, amount: int, source):
-        self._hp = min(self._base["MAX_HP"], self._hp + max(0, int(amount)))
+        self.HP = min(self._base["MAX_HP"], self.HP + max(0, int(amount)))
 
     # ===== 临时加成 & Buff =====
     def add_stat_pct(self, stat: str, value: float):
@@ -107,7 +169,7 @@ class Entity:
 
     # ===== 生命周期 =====
     def is_alive(self) -> bool:
-        return self._hp > 0
+        return self.HP > 0
 
     @property
     def stats(self) -> StatsView:

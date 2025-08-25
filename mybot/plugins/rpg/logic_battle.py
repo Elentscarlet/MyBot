@@ -6,15 +6,17 @@
 - 新增 simulate_duel_with_skills：事件驱动技能战斗（不再走旧的即时数值结算）
 """
 from __future__ import annotations
-from typing import Dict, Tuple, List
+
 import pathlib
-import yaml
 import random
+from typing import Dict, Tuple, List
 
-from .engine.skill_engine import SkillEngine
-from .battle.adapters import player_to_entity, monster_to_entity
+import yaml
 
-from .logic_skill import equip_skills_for_player
+from mybot.plugins.rpg.battle.adapters import player_to_entity, monster_to_entity
+from mybot.plugins.rpg.battle.entity import Entity
+from mybot.plugins.rpg.engine.skill_engine import SkillEngine
+from mybot.plugins.rpg.logic_skill import equip_skills_for_player
 
 
 # === 兼容：老面板推导（如有外部依赖就保留；这里给一个最简实现） ===
@@ -41,11 +43,11 @@ def _load_monster_def(monster_id: str) -> Dict:
 
 # === 核心：跑一场 1v1（或 组队可拓展） ===
 def simulate_duel_with_skills(
-    player,
-    monster_id: str,
-    boss_hp: int | None = None,
-    max_turns: int = 6,
-    seed: int | None = None,
+        player,
+        monster_id: str,
+        boss_hp: int | None = None,
+        max_turns: int = 6,
+        seed: int | None = None,
 ) -> Tuple[str, List[str]]:
     """
     事件驱动技能战斗（最小复现）：
@@ -155,7 +157,7 @@ def simulate_duel_with_skills(
 
 
 def simulate_pvp_with_skills(
-    player_a, player_b, max_turns: int = 20, seed: int | None = None
+        player_a, player_b, max_turns: int = 20, seed: int | None = None
 ) -> tuple[str, list[str]]:
     """
     玩家 vs 玩家 技能战斗（事件驱动，支持技能/冷却/BUFF等）。
@@ -174,6 +176,7 @@ def simulate_pvp_with_skills(
     ent_b.set_allies([ent_b])
     ent_b.set_enemies([ent_a])
 
+    # 注入引擎
     ent_a.engine = eng
     ent_b.engine = eng
 
@@ -278,23 +281,42 @@ def _set_cd_after_cast(ent, sid: str, eng: SkillEngine):
             ent.cds[k] -= 1
 
 
-def debug_pvp():
-    from .models import Player
-    from .models import Weapon
+def process_attack(self, attacker: Entity, defender: Entity, damage: float) -> None:
+    """处理攻击"""
+    # 创建攻击上下文
+    context = {
+        'source': attacker,
+        'target': defender,
+        'damage': damage,
+        'element': 'physical'
+    }
 
+    # 触发造成伤害事件
+    self.skill_system.on_event('on_deal_damage', context)
+
+    # 实际造成伤害
+    defender.take_damage(damage, 'physical', attacker)
+
+
+def debug_pvp():
+    from mybot.plugins.rpg.models import Player, Weapon
+
+    # 构造两个测试玩家
     # 构造两个测试玩家
     p1 = Player(uid="1", gid="1", name="Alice")
     p2 = Player(uid="2", gid="1", name="Bob")
     # 给玩家分配基础属性和武器
     p1.points.str = 10
-    p1.points.hp = 10
-    p1.weapon = Weapon(name="测试剑", slots=[1, 2, 3])
-    p2.points.str = 8
-    p2.points.hp = 10
+    p1.points.hp = 1
+    p1.points.def_ = 90
+    p1.weapon = Weapon(name="测试剑", slots=[1, 1, 1])
+    p2.points.str = 10
+    p2.points.hp = 1
+    p2.points.def_ = 90
     p2.weapon = Weapon(name="测试斧", slots=[1, 1, 1])
 
     # 跑一场PVP
-    result, logs = simulate_pvp_with_skills(p1, p2, max_turns=6)
+    result, logs = simulate_pvp_with_skills(p1, p2, max_turns=5)
     print("===== PVP DEBUG =====")
     for line in logs:
         print(line)

@@ -132,6 +132,8 @@ class SkillEngine:
         # 1) 技能被动/光环等
         for s in getattr(actor, "skills", []):
             if getattr(s, "trigger", None) == event:
+                # 将技能名称储存到payload中，方便后面输出日志
+                ctx.payload.__setitem__("skill_name", s.name)
                 tlist = self._resolve_targets(actor, getattr(s, "target", "self"))
                 self._run_effects(getattr(s, "effects", []), ctx, tlist)
 
@@ -149,6 +151,7 @@ class SkillEngine:
     ) -> bool:
         """释放一个主动技：外层保证 cost/cd 校验与扣除。这里做 on_before_skill 与 on_cast。"""
         s = self.build_skill_from_id(skill_id)
+        self.log.append(f"{actor.name} 使用了 【{s.name}】")
         if not s:
             return False
         # 预热（可被动加伤/降耗等）
@@ -164,7 +167,6 @@ class SkillEngine:
             rng=self.rng,
         )
         self._run_effects(getattr(s, "effects", []), ctx, targets)
-        self.log.append(f"{actor.name} 使用 {s.name}")
         return True
 
     def tick_buffs(self, actor: Entity):

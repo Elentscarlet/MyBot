@@ -1,0 +1,4 @@
+# 事件类型及其每轮最大执行次数配置
+- event_type: "attack"
+  name: "攻击"
+  max_count: 1  # 每人每轮只能攻击1次

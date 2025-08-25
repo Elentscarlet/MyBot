@@ -32,7 +32,7 @@
   conditions:
     - expr: "incoming.damage > 0"
   effects:
-    - op: damage
+    - op: reflect_damage
       power: "DEF * 0.3"
       
 - id: basic_attack
@@ -40,12 +40,15 @@
   type: active
   cost: { mp: 0 }
   cd: 0
-  trigger: on_cast
   target: enemy_single
+  triggers:
+    - event_type: "attack"
+      is_attacker: true
+      priority: 0
+      stop_propagation: false
   effects:
-    # 伤害 = max(1, ATK - 0.5*DEF) * 波动；是否暴击由实体.try_crit() 决定
-    - op: damage
-      power: "max(1, ATK - 0.5*DEF)"
+    - op: deal_damage
+      formula: "max(1, source.ATK)"
       variance: 0.05           # 可选：伤害±5%波动；由 effect_ops 支持
       can_crit: true           # 可选：允许暴击；由 effect_ops 支持
       crit_mult: 1.5
@@ -53,16 +56,21 @@
 - id: active_power
   name: 力量打击
   type: active
-  cost: { mp: 10 }
+  cost: { mp: 0 }
   cd: 2
-  trigger: on_cast
   target: enemy_single
+  triggers:
+    - event_type: "attack"
+      is_attacker: true
+      priority: 1
+      stop_propagation: false
   effects:
-    - op: damage
-      power: "ATK * 1.2"
-      variance: 0.03
+    - op: deal_damage
+      formula: "source.ATK * 1.2"
+      damage_type: "physical"
       can_crit: true
-      crit_mult: 1.6
+      crit_multiplier: 1.6
+      variance: 0.03
 
 - id: active_quick
   name: 迅捷
@@ -75,3 +83,19 @@
     - op: add_buff
       buff_id: haste_buff
       stacks: 1
+
+# 被动技能
+- id: passive_thorns
+  name: 铜墙铁壁
+  type: passive
+  cost: { mp: 0 }
+  cd: 0
+  triggers:
+    - event_type: "before_damage_calc"
+      is_attacker: false
+      conditions:
+        - expr: "damage > 0 and damage_type == 'physical'"
+      stop_propagation: false
+  effects:
+    - op: "damage_reduction"
+      reduction: "target.DEF * 0.5"

@@ -18,6 +18,8 @@ __all__ = [
     "score_from_weapon",
 ]
 
+from .util.skill_factory import SkillFactory
+
 
 def score_from_weapon(player: Any) -> int:
     """
@@ -41,7 +43,7 @@ def score_from_weapon(player: Any) -> int:
     return int(s1 * 1 + s2 * 2 + s3 * 3)
 
 
-def equip_skills_for_player(player: Any, ent: Entity) -> None:
+def equip_skills_for_player(player: Any, ent: Entity,skill_factory:SkillFactory) -> None:
     """
     为玩家实体配发技能（完全表驱动）：
     1) 用 score_from_weapon(player) 计算 score
@@ -62,20 +64,27 @@ def equip_skills_for_player(player: Any, ent: Entity) -> None:
     skill_ids: List[str] = eng.match_equip_rules_by_points(points)
 
     # 3) 根据 ID 构造运行期技能
-    ent.skills = getattr(ent, "skills", [])
-    for sid in skill_ids:
-        s = eng.build_skill_from_id(sid)
-        if s:
-            ent.skills.append(s)
-
-    # 4) 兜底：最少拥有 basic_attack
-    if not ent.skills:
-        s = eng.build_skill_from_id("basic_attack")
-        if s:
-            ent.skills.append(s)
-
-    # 5) 初始化冷却表（cd 表置0，等待外层在释放后设置真实 cd）
-    ent.cds = getattr(ent, "cds", {})
-    for s in ent.skills:
-        if getattr(s, "cd", 0) > 0 and s.id not in ent.cds:
-            ent.cds[s.id] = 0
+    for skill_id in skill_ids:
+        try:
+            skill = skill_factory.create_skill(skill_id, ent)
+            ent.skills.append(skill)
+            print(f"为玩家{player.name} 添加技能: {skill.name}")
+        except ValueError as e:
+            print(e)
+    # ent.skills = getattr(ent, "skills", [])
+    # for sid in skill_ids:
+    #     s = eng.build_skill_from_id(sid)
+    #     if s:
+    #         ent.skills.append(s)
+    #
+    # # 4) 兜底：最少拥有 basic_attack
+    # if not ent.skills:
+    #     s = eng.build_skill_from_id("basic_attack")
+    #     if s:
+    #         ent.skills.append(s)
+    #
+    # # 5) 初始化冷却表（cd 表置0，等待外层在释放后设置真实 cd）
+    # ent.cds = getattr(ent, "cds", {})
+    # for s in ent.skills:
+    #     if getattr(s, "cd", 0) > 0 and s.id not in ent.cds:
+    #         ent.cds[s.id] = 0
