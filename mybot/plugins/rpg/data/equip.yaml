@@ -1,20 +1,20 @@
 rules:
   # 默认拥有普通攻击
-  - when: { str_gte: 0}
-    give: [basic_attack]
+  - when: { str_gte: 0 }
+    give: [ basic_attack ]
   # 力量大于等于8给主动技
   - when: { str_gte: 8 }
-    give: [active_power]
-  # 敏捷大于等于8给主动技
+    give: [ active_power ]
+  # 敏捷大于等于8给被动
   - when: { agi_gte: 8 }
-    give: [active_quick]
+    give: [ attack_bonus ]
   # 防御大于等于8给被动
   - when: { def__gte: 8 }
-    give: [passive_thorns]
+    give: [ thorns,passive_thorns ]
   # 体力大于等于8给被动
   - when: { hp_gte: 8 }
-    give: [passive_lifesteal]
+    give: [ life_steal ]
 
 # 每个人默认被动
 defaults:
-  give: [passive_berserk]
+  give: [ basic_attack ]

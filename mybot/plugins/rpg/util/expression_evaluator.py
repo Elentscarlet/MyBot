@@ -30,7 +30,7 @@ class ExpressionEvaluator:
             safe_locals.update(self.safe_globals)
 
             # 添加单位属性访问
-            self._inject_unit_attributes(safe_locals, context)
+            # self._inject_unit_attributes(safe_locals, context)
 
             return eval(expr, {'__builtins__': {}}, safe_locals)
         except Exception as e:

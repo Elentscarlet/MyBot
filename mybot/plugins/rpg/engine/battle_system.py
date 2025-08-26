@@ -1,8 +1,13 @@
+import queue
+import random
+import time
 from collections import defaultdict
 from typing import List, Dict, Any
 
 from .event_bus import EventBus, BattleEvent
 from ..battle.entity import Entity
+from ..battle.event_info import EventInfo
+from ..util.event_chain_tracker import EventChainTracker
 
 
 class BattleSystem:
@@ -13,6 +18,16 @@ class BattleSystem:
         self.is_battle_active = False
         self._register_core_handlers()
         self._event_type_count: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))
+        self.winner = None
+        self.battle_log = []
+        self.event_queue = queue.Queue()
+        self.event_tracker = EventChainTracker()  # 初始化事件追踪器
+
+    def put_event(self, event: EventInfo):
+        self.event_queue.put(event)
+
+    def pop_event(self) -> EventInfo:
+        return self.event_queue.get()
 
     def _register_core_handlers(self):
         """注册核心事件处理器"""
@@ -23,36 +38,62 @@ class BattleSystem:
         """添加战斗单位"""
         self.units.append(unit)
 
-    def start_battle(self):
+    def start_battle(self, ent_a, ent_b, max_turns: int):
         """开始战斗"""
         self.is_battle_active = True
         self.current_round = 1
 
-        self.event_bus.publish(BattleEvent.BATTLE_START, {
-            'round': self.current_round,
-            'units': self.units
-        })
+        self.event_bus.publish(BattleEvent.BATTLE_START, EventInfo(source=None, target=None))
 
-        self.start_round()
+        self.battle_log.append("\n=== 战斗模拟开始 ===")
+        # 根据先攻决定攻击者
+        first, second = ent_a, ent_b
+        attacker, defender = (first, second) if self._get_initiative(first, second) else (second, first)
+        for turn in range(1, max_turns + 1):
+            if not self.is_battle_active:
+                break
+            self.start_round()
+
+            # 处理攻击
+            self.process_attack(attacker, defender, turn)
+
+            # 交換順序
+            attacker, defender = defender, attacker
+
+            self.end_round()
+
+        self.end_battle()
+
+    def _get_initiative(self, ent_a: Entity, ent_b: Entity):
+        if ent_a.AGI == ent_b.AGI:
+            return random.random() < 0.5  # 50% chance of True/False
+        return ent_a.AGI > ent_b.AGI
+
     def end_battle(self):
         if not self.is_battle_active:
             return
         # 发布战斗结束事件
+        print(self.units)
+        alives = [unit for unit in self.units if unit.is_alive]
+        if (not alives) or (len(alives) == 0):
+            self.is_battle_active = False
+            return
         winner = [unit for unit in self.units if unit.is_alive][0].name
+        self.winner = winner
         end_data = {
-                'round': self.current_round,
-                'winner': winner,
-                'units': self.units
-            }
+            'round': self.current_round,
+            'winner': winner,
+            'units': self.units
+        }
 
-        self.event_bus.publish(BattleEvent.BATTLE_END, end_data)
-        print(f"战斗结束！{'平局' if winner is None else winner + '获胜'}")
+        self.event_bus.publish(BattleEvent.BATTLE_END, EventInfo(source=None, target=None))
+        self.battle_log.append(f"战斗结束！{'平局' if winner is None else winner + '获胜'}")
+        self.is_battle_active = False
 
     def start_round(self):
         """开始新回合"""
-        self.event_bus.publish(BattleEvent.ROUND_START, {
-            'round': self.current_round
-        })
+        self.event_bus.publish(BattleEvent.ROUND_START,
+                               EventInfo(source=None, target=None, round_num=self.current_round))
 
         # 更新所有单位的Buff和冷却
         for unit in self.units:
@@ -63,61 +104,147 @@ class BattleSystem:
 
     def end_round(self):
         """结束当前回合"""
-        self.event_bus.publish(BattleEvent.ROUND_END, {
-            'round': self.current_round
-        })
+        self.event_bus.publish(BattleEvent.ROUND_END, EventInfo(source=None, target=None, round_num=self.current_round))
 
         self.current_round += 1
 
-    def process_attack(self, attacker: Entity, defender: Entity, base_damage=0.0):
+    def process_attack(self, attacker: Entity, defender: Entity, round_num):
         """处理攻击行动"""
-        # 攻击前事件
-        attack_data = {
-            'source': attacker,
-            'target': defender,
-            'damage': base_damage,
-            'damage_type': 'physical',
-            'count_dict': self._event_type_count,
-            'max_count': 1
-        }
+        # 创建事件
+        attack_data = EventInfo(attacker, defender, is_crit=False,
+                                round_num=round_num, can_reflect=True, count_dict=self._event_type_count)
 
-        self.event_bus.publish(BattleEvent.BEFORE_ACTION, attack_data)
         self.event_bus.publish(BattleEvent.ATTACK, attack_data)
+        chain_id = self.event_tracker.start_new_chain(attack_data)
 
-        # 伤害计算前事件
-        self.event_bus.publish(BattleEvent.BEFORE_DAMAGE_CALC, attack_data)
-        self.event_bus.publish(BattleEvent.BEFORE_TAKE_DAMAGE, attack_data)
+        for e in attack_data.sub_event:
+            self.put_event(e)
+            self.event_tracker.add_event_to_chain(e, attack_data.event_id)
 
-        # 实际造成伤害
-        actual_damage = defender.take_damage(attack_data.get("damage"), 'physical', attacker)
-        attack_data['actual_damage'] = actual_damage
+        processed_events = 0
+        max_events = 20  # 防止无限循环
+        # 伤害事件循环
+        while self.event_queue.qsize() > 0 and processed_events < max_events:
+            event = self.pop_event()
+            processed_events += 1
+            self.event_tracker.add_event_to_chain(event, getattr(event, 'parent_event_id', None))
+            # 伤害计算
+            self.event_bus.publish(BattleEvent.DAMAGE_CALC, event)
 
-        # 伤害计算后事件
-        self.event_bus.publish(BattleEvent.AFTER_DAMAGE_CALC, attack_data)
+            # 处理伤害
+            self._handle_take_damage(event)
 
-        # 攻击后事件
-        self.event_bus.publish(BattleEvent.AFTER_ACTION, attack_data)
+            # 伤害结算后
+            self.event_bus.publish(BattleEvent.AFTER_TAKE_DAMAGE, event)
 
-        # 检查是否触发受伤害事件
-        if actual_damage > 0:
-            self.event_bus.publish(BattleEvent.AFTER_TAKE_DAMAGE, {
-                'source': attacker,
-                'target': defender,
-                'damage': actual_damage,
-                'damage_type': 'physical'
-            })
+            # 日志记录
+            # self.event_bus.publish(BattleEvent.AFTER_ACTION, event)
+
+            for e in event.sub_event:
+                self.put_event(e)
+                self.event_tracker.add_event_to_chain(e, event.event_id)
+        # 可选：可视化事件链
+        res = self.visualize_event_chain(chain_id)
+        for re in res:
+            self.battle_log.append(re)
+
 
     def check_battle_end(self) -> bool:
         """检查战斗是否结束"""
         alive_units = [unit for unit in self.units if unit.is_alive]
         return len(alive_units) <= 1
 
-    def _handle_round_start(self, event_data: Dict) -> bool:
-        """处理回合开始"""
-        print(f"第 {event_data['round']} 回合开始!")
+    def _handle_log_action(self, e: EventInfo) -> bool:
+        log = ""
+        source = e.source
+        target = e.target
+        skill = e.skill
+
+        crit_str = "（暴击）" if e.is_crit else ""
+        if e.op:
+            amount = e.amount
+            if e.op == 'reflect_damage':
+                log = f"{source.name} 释放了【{skill.name}】，对 {target.name} 反射了 {amount}{crit_str} 点伤害！"
+            elif e.op == 'damage':
+                log = f"{source.name} 释放了【{skill.name}】，对 {target.name} 造成了 {amount}{crit_str} 点伤害！"
+            elif e.op == 'damage_reduction':
+                log = f"{source.name} 释放了【{skill.name}】，减免了 {amount}{crit_str} 点伤害！"
+            elif e.op == 'leech':
+                log = f"{source.name} 释放了【{skill.name}】，从 {target.name} 吸收了 {amount}{crit_str} 点生命值！"
+            else:
+                pass
+        else:
+            log = f"{source.name} 释放了 【{skill.name}】，对{target.name} 造成了{e.amount}{crit_str}点伤害！"
+        self.battle_log.append(log)
         return True
 
-    def _handle_round_end(self, event_data: Dict) -> bool:
-        """处理回合结束"""
-        print(f"第 {event_data['round']} 回合结束!")
+    def _handle_round_start(self, event_data: EventInfo) -> bool:
+        """处理回合开始"""
+        self.battle_log.append(f"第 {event_data.round_num} 回合开始!")
         return True
+
+    def _handle_round_end(self, event_data: EventInfo) -> bool:
+        """处理回合结束"""
+        hp_log = ""
+        for unit in self.units:
+            hp_log += f"{unit.name}:剩余[{int(unit.HP)}]HP "
+        self.battle_log.append(hp_log)
+        if self.check_battle_end():
+            self.end_battle()
+        return True
+
+    def _handle_take_damage(self, event_data: EventInfo):
+        if event_data.op == "damage":
+            event_data.amount = event_data.target.take_damage(event_data.amount)
+        if event_data.op == "reflect_damage":
+            event_data.amount = event_data.target.take_damage(event_data.amount)
+
+    def visualize_event_chain(self, chain_id: str):
+        """可视化事件链"""
+        chain = self.event_tracker.get_event_chain(chain_id)
+        if not chain:
+            print("事件链不存在")
+            return
+
+        # 使用DFS遍历事件树
+        def dfs(event_id: str, depth: int = 0, prefix: str = "", is_last: bool = True):
+            event = self.event_tracker.get_event_by_id(event_id)
+            log = []
+            if not event:
+                return None
+            # 构建连接线
+            connector = "└── " if is_last else "├── "
+            if depth == 0:
+                connector = ""  # 根节点不需要连接线
+
+            # 显示事件信息
+            if event.skill:
+                if event.op == "damage_reduction":
+
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [减免({event.amount})点伤害]"
+                elif event.op == 'reflect_damage':
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [反射({event.amount})点伤害]"
+                elif event.op == 'damage':
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [造成({event.amount})点伤害]"
+                elif event.op == 'leech':
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [吸收({event.amount})点生命值]"
+                else:
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [({event.amount})]"
+                log.append(f"{prefix}{connector}{event_info}")
+            else:
+                # 对于没有技能的事件（如根事件）
+                event_info = f"{event.source.name} -> {event.target.name}"
+                log.append(f"{prefix}{connector}{event_info}")
+
+            # 处理子事件
+            children = self.event_tracker.get_event_children(event_id)
+            for i, child in enumerate(children):
+                is_last_child = i == len(children) - 1
+                new_prefix = prefix + ("    " if is_last else "│   ")
+                res = (dfs(child.event_id, depth + 1, new_prefix, is_last_child))
+                for re in res:
+                    log.append(re)
+            return log
+
+        # 从根事件开始遍历
+        return dfs(chain['root_event'].event_id, is_last=True)

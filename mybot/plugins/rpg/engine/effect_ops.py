@@ -38,8 +38,8 @@ def op_damage(
     # 暴击（由实体提供 try_crit）
     can_crit = bool(eff.get("can_crit", False))
     if can_crit and hasattr(ctx.caster, "try_crit") and ctx.caster.try_crit():
-        crit_mult = float(eff.get("crit_mult", 1.5))
-        dmg = int(dmg * crit_mult)
+        crit_multiplier = float(eff.get("crit_multiplier", 1.5))
+        dmg = int(dmg * crit_multiplier)
         ctx.payload["crit"] = True
 
     # 扣血并记录“最后一次伤害”，便于后续效果读取

@@ -1,8 +1,12 @@
 from collections import defaultdict
 from typing import Dict, List, Any, Callable, Optional
 
+from mybot.plugins.rpg.battle.event_info import EventInfo
+from mybot.plugins.rpg.util.config_loader import ConfigLoader
+
 
 class EventBus:
+    config_loader = ConfigLoader('./config/')
     def __init__(self):
         self._listeners: Dict[str, List[tuple]] = {}
         self._event_type_count: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))
@@ -22,12 +26,12 @@ class EventBus:
                 (l, p) for l, p in self._listeners[event_type] if l != listener
             ]
 
-    def publish(self, event_type: str, event_data: Dict[str, Any]) -> Optional[bool]:
+    def publish(self, event_type: str, event_data: EventInfo) -> Optional[bool]:
         """发布事件"""
         if event_type not in self._listeners:
             return None
         # 获取事件源
-        event_source = event_data.get('source') or event_data.get('attacker')
+        event_source = event_data.source
 
         if event_source and not self._check_event_limit(event_type, event_source, event_data):
             print(f"{event_source.name} 本回合已无法执行 {event_type} 行为")
@@ -46,9 +50,11 @@ class EventBus:
                 return False
         return True
 
-    def _check_event_limit(self, event_type: str, owner: Any, event_data: Dict) -> bool:
+    def _check_event_limit(self, event_type: str, owner: Any, event_data: EventInfo) -> bool:
         """检查行为次数限制"""
-        max_count = event_data.get('max_count', 1)  # 默认每轮1次
+        max_count = self.config_loader.get_event_limit(event_type)
+        if not max_count:
+            return True
         current_count = self._event_type_count[event_type].get(owner, 0)
         return current_count < max_count
 
@@ -79,11 +85,8 @@ class BattleEvent:
     SKILL_CAST = "skill_cast"
 
     # 伤害相关事件
-    BEFORE_DAMAGE_CALC = "before_damage_calc"
-    AFTER_DAMAGE_CALC = "after_damage_calc"
-    BEFORE_TAKE_DAMAGE = "before_take_damage"
+    DAMAGE_CALC = "damage_calc"
     AFTER_TAKE_DAMAGE = "after_take_damage"
-    CRITICAL_HIT = "critical_hit"
 
     # 状态效果事件
     BUFF_APPLY = "buff_apply"

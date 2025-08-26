@@ -1,10 +1,10 @@
 import random
-from operator import truediv
 from typing import Dict, Callable, List, Any
 
-from mybot.plugins.rpg.engine.event_bus import EventBus
 from .expression_evaluator import ExpressionEvaluator
 from ..battle.entity import Entity
+from ..battle.event_info import EventInfo
+from ..engine.event_bus import EventBus
 
 
 class SkillFactory:
@@ -61,6 +61,16 @@ class ConfigSkill:
         self.listeners = []
 
         self._register_triggers()
+        self.op_handlers = {
+            'damage': self._execute_damage,
+            'damage_reduction': self._execute_damage_reduction,
+            'reflect_damage': self._execute_damage_reflect,
+            'heal': self._execute_heal,
+            'apply_buff': self._execute_apply_buff,
+            'apply_debuff': self._execute_apply_debuff,
+            'modify_stat': self._execute_modify_stat,
+            'leech': self._execute_leech
+        }
 
     def _register_triggers(self):
         """注册事件触发器"""
@@ -83,32 +93,31 @@ class ConfigSkill:
 
             # 检查条件
             conditions = trigger_config.get('conditions', [])
-            if not self._check_conditions(conditions, event_data,trigger_config.get("is_attacker")):
+            if not self._check_conditions(conditions, event_data, trigger_config.get("is_attacker")):
                 return None
 
             # 激活技能
             self.activate(event_data)
-            print(f"{self.owner.name} 施放技能{self.name}")
 
             # 是否停止事件传播
             return not trigger_config.get('stop_propagation', False)
 
         return handler
 
-    def _check_conditions(self, conditions: List[Dict], event_data: Dict,attacker_check:bool) -> bool:
+    def _check_conditions(self, conditions: List[Dict], event_data: EventInfo, attacker_check: bool) -> bool:
         """检查触发条件"""
         context = self._create_execution_context(event_data)
 
         # 攻击者检查
-        if self.owner.name == event_data.get('source').name:
+        if self.owner.name == event_data.source.name:
             is_attacker = True
         else:
             is_attacker = False
-        if not(is_attacker  == attacker_check):
+        if not (is_attacker == attacker_check):
             return False
-        if is_attacker and self.owner != event_data.get("source"):
+        if is_attacker and self.owner != event_data.source:
             return False
-        if not is_attacker and self.owner == event_data.get("source"):
+        if not is_attacker and self.owner == event_data.source:
             return False
 
         # 技能触发条件检查
@@ -119,17 +128,16 @@ class ConfigSkill:
 
         return True
 
-    def _create_execution_context(self, event_data: Dict = None) -> Dict:
+    def _create_execution_context(self, event_data: EventInfo) -> Dict:
         """创建用于效果执行的上下文（可修改原始数据）"""
         context = {
             'source': self.owner,
-            'target': event_data.get('target'),
+            'target': event_data.target,
             'skill': self,
-            'random': random.random
+            'damage_type': 'physical',
+            'damage': event_data.amount,
+            'amount': event_data.amount
         }
-
-        if event_data:
-            context.update(event_data)
 
         return context
 
@@ -147,7 +155,7 @@ class ConfigSkill:
 
         return True
 
-    def activate(self, event_data: Dict = None):
+    def activate(self, event_data: EventInfo = None):
         """激活技能"""
         context = self._create_execution_context(event_data)
 
@@ -159,9 +167,7 @@ class ConfigSkill:
 
         # 执行效果
         effects = self.config.get('effects', [])
-        self._execute_effects(effects, context)
-        # 激活技能后，将context的内容反向更新到 event_data中
-        event_data.update(context)
+        self._execute_effects(effects, context, event_data)
 
     def _deduct_cost(self):
         """扣除资源消耗"""
@@ -170,47 +176,99 @@ class ConfigSkill:
             current = getattr(self.owner, resource_type.upper(), 0)
             setattr(self.owner, resource_type.upper(), max(0, current - amount))
 
-    def _execute_effects(self, effects: List[Dict], context: Dict):
+    def _execute_effects(self, effects: List[Dict], context: Dict, event_data: EventInfo):
         """执行技能效果"""
         for effect in effects:
-            self._execute_single_effect(effect, context)
+            self._execute_single_effect(effect, context, event_data)
 
-    def _execute_single_effect(self, effect: Dict, context: Dict):
+    def _execute_single_effect(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行单个效果"""
         op = effect.get('op')
+        # 操作类型到处理方法的映射
 
-        if op == 'deal_damage':
-            self._execute_deal_damage(effect, context)
-        elif op == 'heal':
-            self._execute_heal(effect, context)
-        elif op == 'damage_reduction':
-            self._execute_damage_reduction(effect, context)
-        elif op == 'apply_buff':
-            self._execute_apply_buff(effect, context)
-        elif op == 'apply_debuff':
-            self._execute_apply_debuff(effect, context)
-        elif op == 'modify_stat':
-            self._execute_modify_stat(effect, context)
+        # 获取对应的处理方法
+        handler = self.op_handlers.get(op)
 
-    def _execute_deal_damage(self, effect: Dict, context: Dict):
+        if handler:
+            # 根据操作类型调用相应的方法
+            if op in ['damage', 'damage_reduction', 'reflect_damage','leech']:
+                return handler(effect, context, event_data)
+            else:
+                return handler(effect, context)
+        return None
+
+    def _execute_damage(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行造成伤害效果"""
         formula = effect.get('formula', '0')
         damage_type = effect.get('damage_type', 'physical')
-        target_ref = effect.get('target', 'target')
 
         damage = self.evaluator.evaluate(formula, context) or 0
-        target = context.get(target_ref)
+        damage = self._cal_crit_damage(effect, context, damage)
+        target = context.get('target')
+        damage_event = EventInfo(source=self.owner, target=target, round_num=effect.get('round_num'))
+        damage_event.skill = self
+        damage_event.amount = damage
+        damage_event.op = effect.get('op')
+        damage_event.is_crit = context.get('is_crit', False)
 
-        if target and damage > 0:
-            context['damage'] = damage
+        event_data.sub_event.append(damage_event)
 
-    def _execute_damage_reduction(self, effect: Dict, context: Dict):
+    def _execute_damage_reduction(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行伤害减免效果"""
         reduction_formula = effect.get('reduction', '0')
-        reduction = self.evaluator.evaluate(reduction_formula, context) or 0
+        reduction = int(self.evaluator.evaluate(reduction_formula, context) or 0)
 
-        if 'damage' in context:
-            context['damage'] = max(0, context['damage'] - reduction)
+        reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=effect.get('round_num'))
+        reduction_event.skill = self
+        reduction_event.amount = reduction
+        reduction_event.op = effect.get('op')
+        reduction_event.can_reflect = False
+        event_data.amount -= reduction
+        event_data.sub_event.append(reduction_event)
+
+    def _execute_damage_reflect(self, effect: Dict, context: Dict, event_data: EventInfo):
+        """执行伤害反射效果"""
+        reflect_formula = effect.get('formula', '0')
+        reflect_type = effect.get('damage_type', 'physical')
+        reflect_target = event_data.source  # 默认反射给伤害来源
+
+        if not event_data.can_reflect:
+            return
+        # 计算反射伤害
+        reflect_damage = self.evaluator.evaluate(reflect_formula, context) or 0
+        reflect_event = EventInfo(source=self.owner, target=reflect_target, round_num=event_data.round_num,
+                                  can_reflect=False)
+        reflect_event.skill = self
+        reflect_event.amount = reflect_damage
+        reflect_event.op = effect.get('op')
+
+        event_data.sub_event.append(reflect_event)
+
+    def _execute_leech(self, effect, context, event_data: EventInfo):
+        """执行吸血效果"""
+        leech_formula = effect.get('formula', '0')
+        leech_target = context.get('source')  # 默认吸血给施法者
+
+        # 计算吸血量
+        leech_amount = int(self.evaluator.evaluate(leech_formula, context) or 0)
+        if leech_amount > 0:
+            leech_target.heal(leech_amount)
+
+        leech_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num, can_reflect=False)
+        leech_event.skill = self
+        leech_event.amount = leech_amount
+        leech_event.op = effect.get('op')
+        event_data.sub_event.append(leech_event)
+
+    def _cal_crit_damage(self, effect: Dict, context: Dict, dmg) -> float:
+        source = context.get('source')
+        prob = source.CRIT
+        r = random.random()
+        if r < prob:
+            context["is_crit"] = True
+            return dmg * effect.get('crit_multiplier', 1)
+        context["is_crit"] = False
+        return dmg * 1.0
 
     def _execute_heal(self, effect: Dict, context: Dict):
         """执行治疗效果"""

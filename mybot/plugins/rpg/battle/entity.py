@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 import random
 
+from mybot.plugins.rpg.battle.event_info import EventInfo
+
 
 @dataclass
 class StatsView:
@@ -33,6 +35,7 @@ class Entity:
         self.DEF = base_stats["DEF"]
         self.AGI = base_stats["AGI"]
         self.CRIT = base_stats["CRIT"]
+        self.MAX_HP = base_stats["MAX_HP"]
         self.HP = base_stats["MAX_HP"]
 
         # 战斗期可变状态
@@ -48,15 +51,15 @@ class Entity:
         # 技能引擎
         self.engine = None
 
-
     # ===============适配新系统=============
-    def take_damage(self, damage: float, damage_type: str, source: 'Entity' = None) -> float:
+    def take_damage(self, damage) -> float:
         """受到伤害"""
         if not self.is_alive:
             return 0
 
         # 计算实际伤害（考虑防御等）
         actual_damage = max(0, int(damage - self.DEF * 0.3))
+
         self.HP = max(0, self.HP - actual_damage)
 
         # 检查死亡
@@ -142,9 +145,6 @@ class Entity:
         # TODO 后续修改防御力计算公式
         dmg = max(0, amount - int(self._base.get("DEF", 0) * 0.2))
         return dmg
-
-    def heal(self, amount: int, source):
-        self.HP = min(self._base["MAX_HP"], self.HP + max(0, int(amount)))
 
     # ===== 临时加成 & Buff =====
     def add_stat_pct(self, stat: str, value: float):

@@ -29,11 +29,6 @@ async def _(event: MessageEvent, bot: Bot):
     info = await bot.get_group_member_info(group_id=int(gid), user_id=int(target))
     b = get_player(target, gid, info.get("card") or info.get("nickname") or target)
 
-    # 为双方实体装配技能
-    # （如果你的 simulate_pvp_with_skills 内部未自动装配技能，可以在此处手动装配）
-    # equip_skills_for_player(a, ...)  # 如有需要
-    # equip_skills_for_player(b, ...)  # 如有需要
-
     # 使用新版PVP接口
     result, logs = simulate_pvp_with_skills(a, b)
     await pvp_m.finish("\n".join(logs))

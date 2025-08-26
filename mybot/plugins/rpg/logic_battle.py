@@ -12,11 +12,16 @@ import random
 from typing import Dict, Tuple, List
 
 import yaml
+from sqlalchemy import Engine
 
 from mybot.plugins.rpg.battle.adapters import player_to_entity, monster_to_entity
 from mybot.plugins.rpg.battle.entity import Entity
+from mybot.plugins.rpg.engine.battle_system import BattleSystem
 from mybot.plugins.rpg.engine.skill_engine import SkillEngine
 from mybot.plugins.rpg.logic_skill import equip_skills_for_player
+from mybot.plugins.rpg.models import Player, Weapon
+from mybot.plugins.rpg.util.config_loader import ConfigLoader
+from mybot.plugins.rpg.util.skill_factory import SkillFactory
 
 
 # === 兼容：老面板推导（如有外部依赖就保留；这里给一个最简实现） ===
@@ -158,102 +163,27 @@ def simulate_duel_with_skills(
 
 def simulate_pvp_with_skills(
         player_a, player_b, max_turns: int = 20, seed: int | None = None
-) -> tuple[str, list[str]]:
-    """
-    玩家 vs 玩家 技能战斗（事件驱动，支持技能/冷却/BUFF等）。
-    返回：(result, logs)
-    """
-    rng = random.Random(seed)
-    eng = SkillEngine(seed=seed)
+) -> tuple[str, str]:
+    config_loader = ConfigLoader('./config/')
+    battle_system = BattleSystem()
+    skill_factory = SkillFactory(config_loader, battle_system.event_bus)
+
     ent_a = player_to_entity(player_a)
     ent_b = player_to_entity(player_b)
-    print("【调试】A实体属性：", vars(ent_a))
-    print("【调试】B实体属性：", vars(ent_b))
-
-    # 注入阵营
-    ent_a.set_allies([ent_a])
-    ent_a.set_enemies([ent_b])
-    ent_b.set_allies([ent_b])
-    ent_b.set_enemies([ent_a])
-
-    # 注入引擎
+    eng = SkillEngine(seed=seed)
     ent_a.engine = eng
     ent_b.engine = eng
 
-    # 配发技能
-    equip_skills_for_player(player_a, ent_a)
-    equip_skills_for_player(player_b, ent_b)
+    equip_skills_for_player(player_a, ent_a,skill_factory)
+    equip_skills_for_player(player_b, ent_b,skill_factory)
 
-    # debug
-    print("A技能：", [s.id for s in getattr(ent_a, "skills", [])])
-    print("B技能：", [s.id for s in getattr(ent_b, "skills", [])])
-    print(
-        "A属性：", getattr(player_a, "points", None), getattr(player_a, "weapon", None)
-    )
-    print(
-        "B属性：", getattr(player_b, "points", None), getattr(player_b, "weapon", None)
-    )
+    # 添加到战斗系统
+    battle_system.add_unit(ent_a)
+    battle_system.add_unit(ent_b)
 
-    # 初始化冷却表
-    for e in (ent_a, ent_b):
-        e.cds = getattr(e, "cds", {})
-        for s in getattr(e, "skills", []):
-            if getattr(s, "cd", 0) > 0 and s.id not in e.cds:
-                e.cds[s.id] = 0
-
-    logs: list[str] = []
-    logs.append(f"【对战开始】{ent_a.name} vs {ent_b.name}")
-
-    eng.emit("on_battle_start", ent_a)
-    eng.emit("on_battle_start", ent_b)
-
-    actors = [ent_a, ent_b]
-    for turn in range(1, max_turns + 1):
-        logs.append(f"—— 第 {turn} 回合 ——")
-        for actor in actors:
-            if not actor.is_alive():
-                continue
-            target = ent_b if actor is ent_a else ent_a
-            if not target.is_alive():
-                break
-
-            eng.emit("on_turn_start", actor)
-            eng.tick_buffs(actor)
-
-            sid = _pick_castable_skill_id(actor)
-            if sid is None:
-                sid = "basic_attack"
-
-            if _cd_ready(actor, sid):
-                ok = eng.cast(actor, sid)
-                if ok:
-                    _set_cd_after_cast(actor, sid, eng)
-                logs.extend(eng.log)
-                eng.log.clear()
-            else:
-                if sid != "basic_attack" and _cd_ready(actor, "basic_attack"):
-                    eng.cast(actor, "basic_attack")
-                    _set_cd_after_cast(actor, "basic_attack", eng)
-                    logs.extend(eng.log)
-                    eng.log.clear()
-                else:
-                    logs.append(f"{actor.name} 暂无法行动（冷却中）")
-
-            eng.emit("on_turn_end", actor)
-            eng.tick_buffs(actor)
-
-            if not ent_a.is_alive() and not ent_b.is_alive():
-                logs.append("双方同时倒地，平局")
-                return "draw", logs
-            if not ent_a.is_alive():
-                logs.append(f"{ent_a.name} 倒地，{ent_b.name} 获胜")
-                return "lose", logs
-            if not ent_b.is_alive():
-                logs.append(f"{ent_b.name} 倒地，{ent_a.name} 获胜")
-                return "win", logs
-
-    logs.append("达到最大回合数，判定平局")
-    return "draw", logs
+    # 开始战斗
+    battle_system.start_battle(ent_a,ent_b,max_turns)
+    return battle_system.winner,battle_system.battle_log
 
 
 # ===== 冷却与择技（最小实现） =====
@@ -280,48 +210,3 @@ def _set_cd_after_cast(ent, sid: str, eng: SkillEngine):
         if k != sid and ent.cds[k] > 0:
             ent.cds[k] -= 1
 
-
-def process_attack(self, attacker: Entity, defender: Entity, damage: float) -> None:
-    """处理攻击"""
-    # 创建攻击上下文
-    context = {
-        'source': attacker,
-        'target': defender,
-        'damage': damage,
-        'element': 'physical'
-    }
-
-    # 触发造成伤害事件
-    self.skill_system.on_event('on_deal_damage', context)
-
-    # 实际造成伤害
-    defender.take_damage(damage, 'physical', attacker)
-
-
-def debug_pvp():
-    from mybot.plugins.rpg.models import Player, Weapon
-
-    # 构造两个测试玩家
-    # 构造两个测试玩家
-    p1 = Player(uid="1", gid="1", name="Alice")
-    p2 = Player(uid="2", gid="1", name="Bob")
-    # 给玩家分配基础属性和武器
-    p1.points.str = 10
-    p1.points.hp = 1
-    p1.points.def_ = 90
-    p1.weapon = Weapon(name="测试剑", slots=[1, 1, 1])
-    p2.points.str = 10
-    p2.points.hp = 1
-    p2.points.def_ = 90
-    p2.weapon = Weapon(name="测试斧", slots=[1, 1, 1])
-
-    # 跑一场PVP
-    result, logs = simulate_pvp_with_skills(p1, p2, max_turns=5)
-    print("===== PVP DEBUG =====")
-    for line in logs:
-        print(line)
-    print("===== 结果：", result)
-
-
-if __name__ == "__main__":
-    debug_pvp()

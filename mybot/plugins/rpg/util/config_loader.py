@@ -11,6 +11,7 @@ class ConfigLoader:
         self.skills_config = self._load_config('skills.yaml')
         self.buffs_config = self._load_config('buffs.yaml')
         self.events_config = self._load_config('battle_event_type.yaml')
+        self._build_event_limits()
 
     def _load_config(self, filename: str) -> Dict[str, Any]:
         """加载YAML配置文件"""
@@ -47,6 +48,6 @@ class ConfigLoader:
             if event_type:
                 self.event_limits[event_type] = max_count
 
-    def get_event_limit(self, event_type: str) -> int:
+    def get_event_limit(self, event_type: str):
         """获取事件类型的最大执行次数"""
-        return self.event_limits.get(event_type, 1)  # 默认1次
+        return self.event_limits.get(event_type, None)  # 默认1次
