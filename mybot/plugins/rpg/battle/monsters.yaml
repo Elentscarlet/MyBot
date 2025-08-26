@@ -1,5 +1,5 @@
 # mybot/plugins/rpg/battle/monsters.yaml
-- id: slime_green
+- id: 绿史莱姆
   name: 绿史莱姆
   tag: monster
   ATK: 20
@@ -9,7 +9,7 @@
   MAX_HP: 180
   CRIT: 0.05
 
-- id: goblin
+- id: 哥布林
   name: 哥布林
   tag: monster
   ATK: 35

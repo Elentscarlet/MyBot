@@ -69,5 +69,5 @@ def monster_to_entity(mdef: Dict, hp: int = None) -> Entity:
     }
     ent = Entity(name=mdef["name"], base_stats=base, tag=mdef.get("tag", "monster"))
     if hp is not None:
-        ent._hp = hp
+        ent.HP = hp
     return ent
