@@ -58,7 +58,9 @@ class Entity:
             return 0
 
         # 计算实际伤害（考虑防御等）
-        actual_damage = max(0, int(damage - self.DEF * 0.3))
+        # 伤害减免率 = DEF / (DEF + 40) * 100%
+        damage_reduction = self.DEF / (self.DEF + 40)
+        actual_damage = max(0, int(damage * (1 - damage_reduction)))
 
         self.HP = max(0, self.HP - actual_damage)
 

@@ -262,13 +262,16 @@ class ConfigSkill:
 
     def _cal_crit_damage(self, effect: Dict, context: Dict, dmg) -> float:
         source = context.get('source')
-        prob = source.CRIT
-        r = random.random()
-        if r < prob:
+        crit_stat = source.CRIT  # 暴击属性 (0~1)
+        # 暴击倍率，目前最大爆伤 = 最小爆伤+1
+        min_crit_multiplier = effect.get('crit_multiplier', 1.0)
+        max_crit_multiplier = effect.get('crit_multiplier', 1.0) + 1.0
+        if random.random() < crit_stat:
             context["is_crit"] = True
-            return dmg * effect.get('crit_multiplier', 1)
+            crit_multiplier = min_crit_multiplier + source.CRIT * (max_crit_multiplier - min_crit_multiplier)
+            return dmg * crit_multiplier
         context["is_crit"] = False
-        return dmg * 1.0
+        return dmg
 
     def _execute_heal(self, effect: Dict, context: Dict):
         """执行治疗效果"""
