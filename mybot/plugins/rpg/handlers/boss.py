@@ -1,13 +1,11 @@
 # mybot/plugins/rpg/handlers/boss.py
 # -*- coding: utf-8 -*-
 import random
-import re
 
 from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.plugin.on import on_fullmatch
 
-from ..battle.adapters import monster_to_entity
-from ..logic_battle import simulate_duel_with_skills, _load_monster_def
+from ..logic_battle import simulate_duel_with_skills
 from ..models import get_boss, put_boss, get_player, put_player
 from ..utils import ids_of
 
@@ -47,7 +45,6 @@ async def _(event: MessageEvent):
 
 @boss_hit_m.handle()
 async def _(event: MessageEvent):
-    gid = str(getattr(event, "group_id", 0))
     uid, gid, name = ids_of(event)
 
     p = get_player(uid, gid, name)

@@ -7,9 +7,6 @@ from typing import LiteralString
 
 import yaml
 
-from mybot.plugins.rpg.models import Player, put_player
-
-
 # 抽卡 ------------------------------------------------------------------
 def gacha10_to_dust() -> tuple[int, LiteralString]:
     root = pathlib.Path(__file__).resolve().parent  # .../rpg

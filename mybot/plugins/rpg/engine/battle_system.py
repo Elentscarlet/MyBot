@@ -74,20 +74,28 @@ class BattleSystem:
             return
         # 发布战斗结束事件
         print(self.units)
-        alives = [unit for unit in self.units if unit.is_alive]
-        if (not alives) or (len(alives) == 0):
+        alive = [unit for unit in self.units if unit.is_alive]
+
+        # 如果没有存活单位，平局
+        if not alive:
+            self.is_battle_active = False
+            self.winner = None
+            self.event_bus.publish(BattleEvent.BATTLE_END, EventInfo(source=None, target=None))
+            self.battle_log.append("战斗结束！平局")
             self.is_battle_active = False
             return
-        winner = [unit for unit in self.units if unit.is_alive][0].name
-        self.winner = winner
-        end_data = {
-            'round': self.current_round,
-            'winner': winner,
-            'units': self.units
-        }
 
+        # 如果只有一个存活单位，该单位获胜
+        if len(alive) == 1:
+            winner = alive[0].name
+        else:
+            # 有多个存活者时，选择血量最多的单位作为获胜者
+            # 如果有多个单位血量相同，选择第一个找到的
+            winner = max(alive, key=lambda unit: unit.HP).name
+
+        self.winner = winner
         self.event_bus.publish(BattleEvent.BATTLE_END, EventInfo(source=None, target=None))
-        self.battle_log.append(f"战斗结束！{'平局' if winner is None else winner + '获胜'}")
+        self.battle_log.append(f"战斗结束！{winner}获胜")
         self.is_battle_active = False
 
     def start_round(self):

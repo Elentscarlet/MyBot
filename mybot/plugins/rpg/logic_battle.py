@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import pathlib
-import random
 from typing import Dict, Tuple, List
 
 import yaml
@@ -49,7 +48,7 @@ def simulate_duel_with_skills(
         player,
         monster_id: str,
         boss_hp: int | None = None,
-        max_turns: int = 6,
+        max_turns: int = 10,
         seed: int | None = None,
 ) -> Tuple[str, List[str],int]:
     """
@@ -84,8 +83,6 @@ def simulate_duel_with_skills(
     # 添加到战斗系统
     battle_system.add_unit(p_ent)
     battle_system.add_unit(m_ent)
-
-    print(m_ent.HP)
 
     # 开始战斗
     battle_system.start_battle(p_ent, m_ent, max_turns)
