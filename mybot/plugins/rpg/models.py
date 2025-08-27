@@ -104,7 +104,7 @@ class Weapon:
         return {"name": self.name, "slots": self.slots}
 
     def cal_dust_consume(self):
-        return 300
+        return 30
 
 
 @dataclass

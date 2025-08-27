@@ -6,7 +6,7 @@ import yaml
 from nonebot.adapters.onebot.v11 import MessageEvent, Bot
 from nonebot.plugin.on import on_keyword
 
-from mybot.plugins.rpg.models import get_player
+from mybot.plugins.rpg.models import get_player, put_player
 from mybot.plugins.rpg.penalty_manager import PenaltyManager
 from mybot.plugins.rpg.utils import ids_of, first_at
 
@@ -132,5 +132,6 @@ async def handle_rob(event: MessageEvent, bot: Bot):
             result_message += f"\n{penalty_data['penalty']}"
 
         result_message += "\n⚠️ 下次小心点哦～"
-
+    put_player(a)
+    put_player(b)
     await rob.finish(result_message)
