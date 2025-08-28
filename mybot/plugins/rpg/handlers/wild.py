@@ -10,7 +10,7 @@ from nonebot import on_regex
 from nonebot.adapters.onebot.v11 import MessageEvent
 
 from mybot.plugins.rpg.logic_battle import simulate_duel_with_skills
-from mybot.plugins.rpg.models import get_player, put_player, get_boss
+from mybot.plugins.rpg.models import get_player, put_player
 from mybot.plugins.rpg.utils import ids_of
 
 wildStart_m = on_fullmatch(("发起远征", "远征"))

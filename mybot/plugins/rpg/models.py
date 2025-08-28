@@ -361,6 +361,21 @@ def get_player(uid: str, gid: str, name: str) -> Player:
         p.weapon = Weapon()
     return p
 
+def get_players_by_gid(gid: str) -> List[Player]:
+    list_players = []
+    db = load_players()
+    for item in db.values():
+        p = Player.from_dict(item)
+        if p.gid==gid:
+            list_players.append(p)
+    return list_players
+
+def put_players(players: List[Player]) :
+    db = load_players()
+    for p in players:
+        db[f"{p.gid}:{p.uid}"] = p.to_dict()
+    save_players(db)
+
 
 def put_player(p: Player):
     db = load_players()

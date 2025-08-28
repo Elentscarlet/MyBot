@@ -6,7 +6,7 @@ from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.plugin.on import on_fullmatch
 
 from ..logic_battle import simulate_duel_with_skills
-from ..models import get_boss, put_boss, get_player, put_player
+from ..models import get_boss, put_boss, get_player, put_player, get_players_by_gid, put_players
 from ..utils import ids_of
 
 # 技能装配：优先使用“配表技能”，若未启用则回退到内置
@@ -61,14 +61,6 @@ async def _(event: MessageEvent):
     log_str = "\n".join(logs)
 
     damage_dealt = max(0, before - boss_left_hp)
-
-    # 更新Boss与排行榜
-    b.hp = max(0, boss_left_hp)
-    if b.hp == 0:
-        b.killed = True
-    b.board[uid] = b.board.get(uid, 0) + damage_dealt
-    put_boss(b)
-
     # 奖励结算
     dia = int(200 + damage_dealt * 8 * random.random())
     dus = int(100 + damage_dealt * 4 * random.random())
@@ -76,6 +68,19 @@ async def _(event: MessageEvent):
     p.dust += dus
     p.counters.boss_hits += 1
     put_player(p)
+
+    # 更新Boss与排行榜
+    b.hp = max(0, boss_left_hp)
+    if b.hp == 0:
+        b.killed = True
+        players = get_players_by_gid(gid)
+        for player in players:
+            player.tear += 1
+        put_players(players)
+        await boss_hit_m.send(f"BOSS[{b.name}]已击杀，本群所有人玩法发放：女神之泪💧x1")
+
+    b.board[uid] = b.board.get(uid, 0) + damage_dealt
+    put_boss(b)
 
     await boss_hit_m.finish(
         f"{p.name} 对BOSS造成 {damage_dealt} 伤害\n"
