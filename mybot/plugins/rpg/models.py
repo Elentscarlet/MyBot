@@ -72,10 +72,10 @@ class Weapon:
     def rank(self) -> str:
         return slots_rank(self.slots)
 
-    def refine(self, p: Player) -> tuple[bool, str]:
+    def refine(self, p: Player) -> tuple[bool, str, int]:
         cost = self.cal_dust_consume()
         if cost > p.dust:
-            return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨"
+            return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨",0
         p.dust -= cost
         # 权重设置：数字越大，权重越小
         weights_matrix = [
@@ -92,9 +92,9 @@ class Weapon:
         new_score = slots_score(random_list)
         if new_score > self.score:
             self.slots = random_list
-            return True, f"「精炼成功」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨"
+            return True, f"「精炼成功」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨", cost
         else:
-            return True, f"「精炼失败」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨"
+            return False, f"「精炼失败」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨", cost
 
     @staticmethod
     def from_dict(d: Dict) -> "Weapon":
@@ -142,6 +142,12 @@ class Counters:
 
 
 @dataclass
+class Pconfig:
+    # 模式：完整版(0) 精简版(1) 仅结果(2)
+    battle_report_model: int = 0
+
+
+@dataclass
 class Player:
     uid: str
     gid: str
@@ -155,6 +161,7 @@ class Player:
     diamond: int = 0
     tear: int = 0
     counters: Counters = field(default_factory=Counters.today)
+    config: Pconfig = field(default_factory=Pconfig)
 
     # ---- 兼容层（短期让 p["diamond"] 还能用）----
     def __getitem__(self, k: str):
@@ -259,7 +266,6 @@ class Player:
         detail.append(f"│ 签到: {'✅' if self.counters.signed else '❌'}")
 
         return "\n".join(detail)
-
 
     def get_point_detail(self) -> str:
         detail = [f"力量: {self.points.str}(+{self.extra_points.str})",

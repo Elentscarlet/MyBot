@@ -115,9 +115,9 @@ class ConfigSkill:
             is_attacker = False
         if not (is_attacker == attacker_check):
             return False
-        if is_attacker and self.owner != event_data.source:
+        if is_attacker and (self.owner != event_data.source or self.owner == event_data.target):
             return False
-        if not is_attacker and self.owner == event_data.source:
+        if not is_attacker and (self.owner == event_data.source or self.owner != event_data.target):
             return False
 
         # 技能触发条件检查

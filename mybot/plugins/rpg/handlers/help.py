@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 from nonebot import on_keyword
+from nonebot.adapters.onebot.v11 import MessageEvent
+from nonebot.plugin.on import on_fullmatch
+
+from mybot.plugins.rpg.models import get_player, put_player
+from mybot.plugins.rpg.utils import ids_of
 
 help_m = on_keyword({"帮助", "菜单", "指令", "help"})
 
@@ -20,3 +25,30 @@ async def _():
         "BOSS：查看世界BOSS｜出刀：攻击BOSS（每天3次）\n"
         "加点 力量 防御 体力 敏捷 暴击：如 加点 9 9 0 8 0（总和不超过26，超出部分自动截断）\n"
     )
+
+battle_report_cmd_0 = on_fullmatch("完整战报")
+@battle_report_cmd_0.handle()
+async def _(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+    p.config.battle_report_model = 0
+    put_player(p)
+    await battle_report_cmd_0.finish()
+
+battle_report_cmd_1 = on_fullmatch("精简战报")
+@battle_report_cmd_1.handle()
+async def _(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+    p.config.battle_report_model = 1
+    put_player(p)
+    await battle_report_cmd_1.finish()
+
+battle_report_cmd_2 = on_fullmatch("无战报")
+@battle_report_cmd_2.handle()
+async def _(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+    p.config.battle_report_model = 2
+    put_player(p)
+    await battle_report_cmd_2.finish()

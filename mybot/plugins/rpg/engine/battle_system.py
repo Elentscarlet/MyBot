@@ -22,6 +22,7 @@ class BattleSystem:
         self.battle_log = []
         self.event_queue = queue.Queue()
         self.event_tracker = EventChainTracker()  # 初始化事件追踪器
+        self.report_mode = 0
 
     def put_event(self, event: EventInfo):
         self.event_queue.put(event)
@@ -45,7 +46,13 @@ class BattleSystem:
 
         self.event_bus.publish(BattleEvent.BATTLE_START, EventInfo(source=None, target=None))
 
-        self.battle_log.append("\n=== 战斗模拟开始 ===")
+        self.battle_log.append("\n=== 战斗开始 ===")
+        if self.report_mode == 0:
+            self.battle_log.append("目前为[完整战报]模式")
+        if self.report_mode == 1:
+            self.battle_log.append("目前为[精简战报]模式")
+        if self.report_mode == 2:
+            self.battle_log.append("目前为[无战报]模式")
         # 根据先攻决定攻击者
         first, second = ent_a, ent_b
         attacker, defender = (first, second) if self._get_initiative(first, second) else (second, first)
@@ -116,7 +123,7 @@ class BattleSystem:
 
         self.current_round += 1
 
-    def process_attack(self, attacker: Entity, defender: Entity, round_num):
+    def process_attack(self, attacker: Entity, defender: Entity, round_num, report_model: int = 0):
         """处理攻击行动"""
         # 创建事件
         attack_data = EventInfo(attacker, defender, is_crit=False,
@@ -152,10 +159,16 @@ class BattleSystem:
                 self.put_event(e)
                 self.event_tracker.add_event_to_chain(e, event.event_id)
         # 可选：可视化事件链
-        res = self.visualize_event_chain(chain_id)
+        res = ""
+        if self.report_mode ==0:
+            res = self.visualize_event_chain(chain_id, 10)
+        elif self.report_mode ==1:
+            res = self.visualize_event_chain(chain_id, 2)
+        elif self.report_mode == 2:
+            res = ""
+
         for re in res:
             self.battle_log.append(re)
-
 
     def check_battle_end(self) -> bool:
         """检查战斗是否结束"""
@@ -188,7 +201,8 @@ class BattleSystem:
 
     def _handle_round_start(self, event_data: EventInfo) -> bool:
         """处理回合开始"""
-        self.battle_log.append(f"第 {event_data.round_num} 回合开始!")
+        if self.report_mode != 2:
+            self.battle_log.append(f"第 {event_data.round_num} 回合开始!")
         return True
 
     def _handle_round_end(self, event_data: EventInfo) -> bool:
@@ -196,7 +210,8 @@ class BattleSystem:
         hp_log = ""
         for unit in self.units:
             hp_log += f"{unit.name}:剩余[{int(unit.HP)}]HP "
-        self.battle_log.append(hp_log)
+        if self.report_mode != 2:
+            self.battle_log.append(hp_log)
         if self.check_battle_end():
             self.end_battle()
         return True
@@ -207,7 +222,7 @@ class BattleSystem:
         if event_data.op == "reflect_damage":
             event_data.amount = event_data.target.take_damage(event_data.amount)
 
-    def visualize_event_chain(self, chain_id: str):
+    def visualize_event_chain(self, chain_id: str, max_depth):
         """可视化事件链"""
         chain = self.event_tracker.get_event_chain(chain_id)
         if not chain:
@@ -224,11 +239,12 @@ class BattleSystem:
             connector = "└── " if is_last else "├── "
             if depth == 0:
                 connector = ""  # 根节点不需要连接线
+            if depth == max_depth:
+                return ""
 
             # 显示事件信息
             if event.skill:
                 if event.op == "damage_reduction":
-
                     event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [减免({event.amount})点伤害]"
                 elif event.op == 'reflect_damage':
                     event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [反射({event.amount})点伤害]"
@@ -241,8 +257,9 @@ class BattleSystem:
                 log.append(f"{prefix}{connector}{event_info}")
             else:
                 # 对于没有技能的事件（如根事件）
-                event_info = f"{event.source.name} -> {event.target.name}"
-                log.append(f"{prefix}{connector}{event_info}")
+                # event_info = f"{event.source.name} -> {event.target.name}"
+                # log.append(f"{prefix}{connector}{event_info}")
+                pass
 
             # 处理子事件
             children = self.event_tracker.get_event_children(event_id)

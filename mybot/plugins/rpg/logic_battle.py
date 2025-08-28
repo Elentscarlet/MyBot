@@ -108,6 +108,7 @@ def simulate_pvp_with_skills(
     # 添加到战斗系统
     battle_system.add_unit(ent_a)
     battle_system.add_unit(ent_b)
+    battle_system.report_mode = player_a.config.battle_report_model
 
     # 开始战斗
     battle_system.start_battle(ent_a,ent_b,max_turns)

@@ -52,7 +52,7 @@ async def _(event: MessageEvent):
         fish_result += f"⚔️ 突然！{enemy}从水中跃出，向你发起了攻击！\n"
         fish_result += f"经过一番搏斗，你成功击退了{enemy}，并获得了{enemy}的宝藏！\n"
         fish_result += f"💎 获得战利品：10钻石\n"
-        p.diamond += 10
+        p.diamond += 100
     else:
         data = load_players()
         player_in_same_group = []
@@ -73,21 +73,21 @@ async def _(event: MessageEvent):
         for log in logs:
             fish_result += log + '\n'
         diamond_change = random.randint(10, 100)
-        if result == "win":
+        if result == p.name:
             if diamond_change > player_to_battle.diamond:
                 diamond_change = player_to_battle.diamond
             p.diamond += diamond_change
             player_to_battle.diamond -= diamond_change
             put_player(player_to_battle)
             fish_result += f"战斗胜利！成功从{player_to_battle.name}手中夺得了{diamond_change}颗钻石！✨"
-        elif result == "lose":
+        elif result == player_to_battle.name:
             if diamond_change > p.diamond:
                 diamond_change = p.diamond
             p.diamond -= diamond_change
             player_to_battle.diamond += diamond_change
             put_player(player_to_battle)
             fish_result += f"战斗失利……{player_to_battle.name}从你这里夺走了{diamond_change}颗钻石💎"
-        elif result == "draw":
+        elif result is None:
             pass
     put_player(p)
     fish_result += f"结算数据：剩余钻石:{p.diamond}💎"
