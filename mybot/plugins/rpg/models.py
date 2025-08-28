@@ -146,6 +146,17 @@ class Pconfig:
     # 模式：完整版(0) 精简版(1) 仅结果(2)
     battle_report_model: int = 0
 
+    @staticmethod
+    def from_dict(d: Dict) -> "Pconfig":
+        return Pconfig(
+            d.get("battle_report_model", 0),
+        )
+
+    def to_dict(self) -> Dict:
+        return {
+            "battle_report_model": self.battle_report_model
+        }
+
 
 @dataclass
 class Player:
@@ -200,6 +211,7 @@ class Player:
             diamond=d.get("diamond", 0),
             tear=d.get("tear", 0),
             counters=Counters.from_dict(d.get("counters", {})),
+            config=Pconfig.from_dict(d.get("config", {})),
         )
 
     def to_dict(self) -> Dict:
@@ -216,6 +228,7 @@ class Player:
             "diamond": self.diamond,
             "tear": self.tear,
             "counters": self.counters.to_dict(),
+            "config": self.config.to_dict(),
         }
 
     def extra_distribute(self, attribute: str):

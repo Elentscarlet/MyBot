@@ -33,7 +33,7 @@ async def _(event: MessageEvent):
     p = get_player(uid, gid, name)
     p.config.battle_report_model = 0
     put_player(p)
-    await battle_report_cmd_0.finish()
+    await battle_report_cmd_0.finish(f"{p.name}已调整为完整战报模式：显示所有对战日志")
 
 battle_report_cmd_1 = on_fullmatch("精简战报")
 @battle_report_cmd_1.handle()
@@ -42,7 +42,7 @@ async def _(event: MessageEvent):
     p = get_player(uid, gid, name)
     p.config.battle_report_model = 1
     put_player(p)
-    await battle_report_cmd_1.finish()
+    await battle_report_cmd_1.finish(f"{p.name}已调整为精简战报模式：只显示每回合主要动作")
 
 battle_report_cmd_2 = on_fullmatch("无战报")
 @battle_report_cmd_2.handle()
@@ -51,4 +51,4 @@ async def _(event: MessageEvent):
     p = get_player(uid, gid, name)
     p.config.battle_report_model = 2
     put_player(p)
-    await battle_report_cmd_2.finish()
+    await battle_report_cmd_2.finish(f"{p.name}已调整为无战报模式：只显示结果")

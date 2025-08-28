@@ -51,7 +51,7 @@ async def _(event: MessageEvent):
         enemy = "【王一梅】"
         fish_result += f"⚔️ 突然！{enemy}从水中跃出，向你发起了攻击！\n"
         fish_result += f"经过一番搏斗，你成功击退了{enemy}，并获得了{enemy}的宝藏！\n"
-        fish_result += f"💎 获得战利品：10钻石\n"
+        fish_result += f"💎 获得战利品：100钻石\n"
         p.diamond += 100
     else:
         data = load_players()
