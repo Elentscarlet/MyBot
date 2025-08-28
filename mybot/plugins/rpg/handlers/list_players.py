@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from nonebot import on_keyword
 from nonebot.adapters.onebot.v11 import MessageEvent
+from nonebot.plugin.on import on_fullmatch
+
 from ..storage import load_players
 
-list_m = on_keyword({"列表", "成员", "玩家"})
+list_m = on_fullmatch(("列表", "成员", "玩家"))
 
 
 @list_m.handle()

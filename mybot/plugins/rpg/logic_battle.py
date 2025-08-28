@@ -83,6 +83,7 @@ def simulate_duel_with_skills(
     # 添加到战斗系统
     battle_system.add_unit(p_ent)
     battle_system.add_unit(m_ent)
+    battle_system.report_mode = player.config.battle_report_model
 
     # 开始战斗
     battle_system.start_battle(p_ent, m_ent, max_turns)
