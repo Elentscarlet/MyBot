@@ -94,14 +94,14 @@ async def handle_rob(event: MessageEvent, bot: Bot):
     # 模拟抢夺结果
     success = random.random() < rob_config["base_config"]["success_rate"]
 
-    amount = random.randint(1, 100)
+    amount = random.randint(1, 200)
     if success:
         # 抢夺成功
         amount, _ = penalty_manager.apply_diamond_penalty(b, a, amount)
         result_message = (
             f"🎯 抢夺成功！\n"
             f"{name} 从 {b.name} 那里抢到了 {amount} 个💎！\n"
-            f"当前钻石：{a.diamond}"
+            f"当前钻石：{a.diamond}💎"
         )
     else:
         # 抢夺失败

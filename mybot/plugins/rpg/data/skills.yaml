@@ -89,7 +89,7 @@
   cd: 0
   stop_propagation: true
   get_by_gacha: false
-  description: "【基础技能】【体力>=8获取】吸血：造成伤害时，根据造成伤害值吸血，基础20%"
+  description: "【基础技能】【体力>=8获取】吸血：造成伤害时，根据造成伤害值吸血，基础10%"
   triggers:
     - event_type: "after_take_damage"
       is_attacker: true

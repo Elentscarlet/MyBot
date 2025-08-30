@@ -3,21 +3,21 @@
   name: 绿史莱姆
   level: 1
   tag: monster
-  ATK: 2
-  DEF: 5
+  ATK: 5
+  DEF: 0
   AGI: 3
   INT: 0
-  MAX_HP: 20
+  MAX_HP: 50
   CRIT: 0.05
 - id: 哥布林
   name: 哥布林
   level: 1
   tag: monster
-  ATK: 3
-  DEF: 1
+  ATK: 10
+  DEF: 5
   AGI: 6
-  INT: 2
-  MAX_HP: 40
+  INT: 1
+  MAX_HP: 100
   CRIT: 0.1
 - id: 远古巨像
   name: 远古巨像
@@ -33,11 +33,11 @@
   name: 野狼
   level: 1
   tag: monster
-  ATK: 2
+  ATK: 12
   DEF: 3
-  AGI: 9
-  INT: 0
-  MAX_HP: 120
+  AGI: 10
+  INT: 1
+  MAX_HP: 130
   CRIT: 0.08
 - id: 巨型蝙蝠
   name: 巨型蝙蝠
@@ -48,47 +48,47 @@
   AGI: 1
   INT: 1
   MAX_HP: 110
-  CRIT: 0.06
+  CRIT: 0.1
 - id: 地精斥候
   name: 地精斥候
   level: 1
   tag: monster
-  ATK: 3
+  ATK: 8
   DEF: 4
   AGI: 1
   INT: 3
-  MAX_HP: 150
-  CRIT: 0.09
+  MAX_HP: 200
+  CRIT: 0.11
 
 - id: 骷髅战士
   name: 骷髅战士
   level: 2
   tag: monster
-  ATK: 5
-  DEF: 8
+  ATK: 15
+  DEF: 2
   AGI: 5
   INT: 1
-  MAX_HP: 320
+  MAX_HP: 350
   CRIT: 0.08
 - id: 毒液蜘蛛
   name: 毒液蜘蛛
   level: 2
   tag: monster
-  ATK: 8
+  ATK: 10
   DEF: 5
   AGI: 12
   INT: 3
-  MAX_HP: 280
-  CRIT: 0.12
+  MAX_HP: 200
+  CRIT: 0.20
 - id: 石像鬼领主
   name: 石像鬼领主
   level: 2
   tag: boss
-  ATK: 68
+  ATK: 50
   DEF: 20
   AGI: 10
   INT: 5
-  MAX_HP: 4500
+  MAX_HP: 800
   CRIT: 0.15
 - id: 沼泽鳄鱼
   name: 沼泽鳄鱼

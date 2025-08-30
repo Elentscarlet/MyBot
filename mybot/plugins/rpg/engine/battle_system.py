@@ -199,7 +199,7 @@ class BattleSystem:
         for k, v in event_data.amount_dict.items():
             dmg_dict[k] += v
 
-        if event_data.op == ("damage" or "reflect_damage"):
+        if event_data.op == "damage" or event_data.op == "reflect_damage":
             event_data.last_amount = 0
             event_data.last_amount = event_data.target.take_damage(dmg_dict)
 
@@ -241,6 +241,9 @@ class BattleSystem:
                     event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [恢复({amount})点生命值]"
                 else:
                     event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [({amount})]"
+
+                if event.is_crit:
+                    event_info +="[💥暴击!!!]"
                 log.append(f"{prefix}{connector}{event_info}")
             else:
                 # 对于没有技能的事件（如根事件）

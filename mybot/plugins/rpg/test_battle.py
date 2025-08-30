@@ -17,14 +17,14 @@ def main():
     p1.points.str = 7
     p1.points.hp = 7
     p1.points.def_ =7
-    p1.points.agi = 9
-    p1.points.crit = 10
+    p1.points.agi = 7
+    p1.points.crit = 20
     p1.config.battle_report_model = 0
     p1.weapon = Weapon(name="测试剑", slots=[1, 1, 1])
-    p2.points.str = 9
-    p2.points.hp = 8
-    p2.points.def_ = 8
-    p2.points.agi = 8
+    p2.points.str = 7
+    p2.points.hp = 7
+    p2.points.def_ = 7
+    p2.points.agi = 7
     p2.points.crit = 2
     p2.weapon = Weapon(name="测试斧", slots=[1, 1, 1])
 
