@@ -5,12 +5,14 @@
   type: active
   cost: { mp: 0 }
   cd: 0
+  stop_propagation: false
+  get_by_gacha: false
   target: enemy_single
+  description: "【基础技能】普通攻击：根据力量造成伤害，倍率1.0，可以暴击"
   triggers:
     - event_type: "attack"
       is_attacker: true
       priority: 0
-      stop_propagation: false
   effects:
     - op: "damage"
       formula: "max(1, source.ATK)"
@@ -22,15 +24,17 @@
   type: active
   cost: { mp: 0 }
   cd: 3
+  stop_propagation: false
+  get_by_gacha: false
   target: enemy_single
+  description: "【基础技能】【力量>=8获取】力量打击：根据力量造成伤害，技能倍率1.8，可以暴击"
   triggers:
     - event_type: "attack"
       is_attacker: true
       priority: 2
-      stop_propagation: false
   effects:
     - op: "damage"
-      formula: "source.ATK * 1.3"
+      formula: "source.ATK * 1.8"
       damage_type: "physical"
       can_crit: true
       crit_multiplier: 1.5
@@ -40,11 +44,13 @@
   type: active
   cost: { mp: 0 }
   cd: 2
+  stop_propagation: false
+  get_by_gacha: false
+  description: "【基础技能】【敏捷>=8获取】连击：攻击时有概率攻击2次，技能倍率1.1，可以暴击"
   triggers:
     - event_type: "attack"
       is_attacker: true
       priority: 2
-      stop_propagation: false
   effects:
     - op: "damage"
       formula: "source.ATK * 1.1"
@@ -63,29 +69,37 @@
   type: passive
   cost: { mp: 0 }
   cd: 1
+  stop_propagation: true
+  get_by_gacha: false
+  description: "【基础技能】【防御>=8获取】铜墙铁壁：受到伤害时，根据防御力减免伤害"
   triggers:
     - event_type: "damage_calc"
       is_attacker: false
       conditions:
         - expr: "damage > 0 and damage_type == 'physical'"
-      stop_propagation: false
+
   effects:
     - op: "damage_reduction"
-      reduction: "damage * 0.5"
+      formula: "damage * (source.DEF / (source.DEF + 50))"
 
 - id: life_steal
   name: 吸血
   type: active
   cost: { mp: 0 }
-  cd: 3
+  cd: 0
+  stop_propagation: true
+  get_by_gacha: false
+  description: "【基础技能】【体力>=8获取】吸血：造成伤害时，根据造成伤害值吸血，基础20%"
   triggers:
     - event_type: "after_take_damage"
       is_attacker: true
+      conditions:
+        - expr: "damage >0 and damage_type == 'physical'"
       priority: 2
-      stop_propagation: false
+
   effects:
     - op: "leech"
-      formula: "damage * 0.3"
+      formula: "damage * (0.1 + source.HP * 0.001)"
 
 # 装备技能，随机抽取：============================================
 
@@ -94,12 +108,75 @@
   type: passive
   cost: { mp: 0 }
   cd: 0
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【荆棘】:受到伤害时反弹伤害"
+  stop_propagation: false
   triggers:
     - event_type: "after_take_damage"
       is_attacker: false
       conditions:
-        - expr: "damage > 0 and damage_type == 'physical'"
-      stop_propagation: false
+        - expr: "damage > 0 and damage_type == 'physical' and op_type == 'damage'"
+
   effects:
     - op: "reflect_damage"
-      formula: "max(1, source.DEF*0.5)"
+      formula: "max(1, source.DEF* (0.5 + skill.level * 0.6))"
+      damage_type: "physical"
+
+- id: fire_enchant
+  name: 火焰附魔
+  type: passive
+  cost: { mp: 0 }
+  cd: 0
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【火焰附魔】:攻击时附加火焰伤害，随技能等级提升"
+  stop_propagation: true
+  triggers:
+    - event_type: "damage_calc"
+      is_attacker: true
+      conditions:
+        - expr: "damage > 0 and op_type == 'damage'"
+  effects:
+    - op: "add_damage"
+      formula: "skill.level*10"
+      damage_type: "fire"
+
+- id: resurrect
+  name: 起死回生
+  type: passive
+  cost: {mp: 0}
+  cd: 999
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【起死回生】:一次对战仅限一次，受到致死伤害时，免疫这次死亡，恢复一定血量"
+  stop_propagation: true
+  triggers:
+    - event_type: "after_take_damage"
+      is_attacker: false
+      conditions:
+        - expr: "damage > 0 and target.is_alive == False"
+  effects:
+    - op: "heal"
+      formula: "source.MAX_HP/10 * skill.level"
+      can_apply_on_death: true
+
+- id: thunder_strike
+  name: 雷霆一击
+  type: passive
+  cost: { mp: 0 }
+  cd: 0
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【雷霆一击】:攻击时有几率触发额外雷电伤害,对敌方造成百分比生命伤害"
+  stop_propagation: true
+  triggers:
+    - event_type: "damage_calc"
+      is_attacker: true
+      conditions:
+          - expr: "damage > 0 and op_type == 'damage'"
+          - expr: "random() < 0.15 + skill.level * 0.05"  # 15%基础几率，每级提升5%
+  effects:
+    - op: "add_damage"
+      formula: "target.MAX_HP * skill.level/10"
+      damage_type: "lightning"

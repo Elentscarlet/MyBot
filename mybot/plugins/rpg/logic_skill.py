@@ -12,7 +12,6 @@ from typing import List, Any
 from .battle.entity import Entity  # type: ignore
 from .engine.skill_engine import SkillEngine  # type: ignore
 
-
 __all__ = [
     "equip_skills_for_player",
     "score_from_weapon",
@@ -43,7 +42,7 @@ def score_from_weapon(player: Any) -> int:
     return int(s1 * 1 + s2 * 2 + s3 * 3)
 
 
-def equip_skills_for_player(player: Any, ent: Entity,skill_factory:SkillFactory) -> None:
+def equip_skills_for_player(player: Any, ent: Entity, skill_factory: SkillFactory) -> None:
     """
     为玩家实体配发技能（完全表驱动）：
     1) 用 score_from_weapon(player) 计算 score
@@ -71,6 +70,13 @@ def equip_skills_for_player(player: Any, ent: Entity,skill_factory:SkillFactory)
             print(f"为玩家{player.name} 添加技能: {skill.name}")
         except ValueError as e:
             print(e)
+
+    # 遍历列表中的每个字典
+    for skill_id, skill_level in player.skills.items():
+        if skill_id in player.equipped_skills:
+            skill = skill_factory.create_skill(skill_id, ent, skill_level)
+            ent.skills.append(skill)
+            print(f"为玩家{player.name} 添加技能: {skill.name}")
     # ent.skills = getattr(ent, "skills", [])
     # for sid in skill_ids:
     #     s = eng.build_skill_from_id(sid)

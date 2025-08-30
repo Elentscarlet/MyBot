@@ -57,7 +57,7 @@ def simulate_duel_with_skills(
     - 主动技释放前的 cd 由此函数管理；资源(cost)留给上层按项目规则处理
     返回值：(result, logs)
     """
-    config_loader = ConfigLoader('./config/')
+    config_loader = ConfigLoader()
     battle_system = BattleSystem()
     skill_factory = SkillFactory(config_loader, battle_system.event_bus)
 
@@ -93,7 +93,7 @@ def simulate_duel_with_skills(
 def simulate_pvp_with_skills(
         player_a, player_b, max_turns: int = 10, seed: int | None = None
 ) -> tuple[str, str]:
-    config_loader = ConfigLoader('./config/')
+    config_loader = ConfigLoader()
     battle_system = BattleSystem()
     skill_factory = SkillFactory(config_loader, battle_system.event_bus)
 
@@ -139,4 +139,6 @@ def _set_cd_after_cast(ent, sid: str, eng: SkillEngine):
     for k in list(ent.cds.keys()):
         if k != sid and ent.cds[k] > 0:
             ent.cds[k] -= 1
+
+
 

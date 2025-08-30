@@ -160,9 +160,9 @@ class BattleSystem:
                 self.event_tracker.add_event_to_chain(e, event.event_id)
         # 可选：可视化事件链
         res = ""
-        if self.report_mode ==0:
+        if self.report_mode == 0:
             res = self.visualize_event_chain(chain_id, 10)
-        elif self.report_mode ==1:
+        elif self.report_mode == 1:
             res = self.visualize_event_chain(chain_id, 2)
         elif self.report_mode == 2:
             res = ""
@@ -174,30 +174,6 @@ class BattleSystem:
         """检查战斗是否结束"""
         alive_units = [unit for unit in self.units if unit.is_alive]
         return len(alive_units) <= 1
-
-    def _handle_log_action(self, e: EventInfo) -> bool:
-        log = ""
-        source = e.source
-        target = e.target
-        skill = e.skill
-
-        crit_str = "（暴击）" if e.is_crit else ""
-        if e.op:
-            amount = e.amount
-            if e.op == 'reflect_damage':
-                log = f"{source.name} 释放了【{skill.name}】，对 {target.name} 反射了 {amount}{crit_str} 点伤害！"
-            elif e.op == 'damage':
-                log = f"{source.name} 释放了【{skill.name}】，对 {target.name} 造成了 {amount}{crit_str} 点伤害！"
-            elif e.op == 'damage_reduction':
-                log = f"{source.name} 释放了【{skill.name}】，减免了 {amount}{crit_str} 点伤害！"
-            elif e.op == 'leech':
-                log = f"{source.name} 释放了【{skill.name}】，从 {target.name} 吸收了 {amount}{crit_str} 点生命值！"
-            else:
-                pass
-        else:
-            log = f"{source.name} 释放了 【{skill.name}】，对{target.name} 造成了{e.amount}{crit_str}点伤害！"
-        self.battle_log.append(log)
-        return True
 
     def _handle_round_start(self, event_data: EventInfo) -> bool:
         """处理回合开始"""
@@ -217,10 +193,15 @@ class BattleSystem:
         return True
 
     def _handle_take_damage(self, event_data: EventInfo):
-        if event_data.op == "damage":
-            event_data.amount = event_data.target.take_damage(event_data.amount)
-        if event_data.op == "reflect_damage":
-            event_data.amount = event_data.target.take_damage(event_data.amount)
+
+        dmg_dict = defaultdict(int)
+        dmg_dict[event_data.damage_type] += event_data.amount
+        for k, v in event_data.amount_dict.items():
+            dmg_dict[k] += v
+
+        if event_data.op == ("damage" or "reflect_damage"):
+            event_data.last_amount = 0
+            event_data.last_amount = event_data.target.take_damage(dmg_dict)
 
     def visualize_event_chain(self, chain_id: str, max_depth):
         """可视化事件链"""
@@ -244,16 +225,22 @@ class BattleSystem:
 
             # 显示事件信息
             if event.skill:
+                amount = event.last_amount if event.last_amount is not None else event.amount
+
                 if event.op == "damage_reduction":
-                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [减免({event.amount})点伤害]"
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [减免({amount})点伤害]"
                 elif event.op == 'reflect_damage':
-                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [反射({event.amount})点伤害]"
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [反射({amount})点伤害]"
                 elif event.op == 'damage':
-                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [造成({event.amount})点伤害]"
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [造成({amount})点伤害]"
+                elif event.op == 'add_damage':
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [附加({amount})点伤害]"
                 elif event.op == 'leech':
-                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [吸收({event.amount})点生命值]"
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [吸收({amount})点生命值]"
+                elif event.op == 'heal':
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [恢复({amount})点生命值]"
                 else:
-                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [({event.amount})]"
+                    event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [({amount})]"
                 log.append(f"{prefix}{connector}{event_info}")
             else:
                 # 对于没有技能的事件（如根事件）

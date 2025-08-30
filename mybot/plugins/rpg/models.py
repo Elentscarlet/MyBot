@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 
 from .storage import today_tag, load_players, save_players, load_boss_map, save_boss_map
+from .util.config_loader import ConfigLoader
 
 RANK_VAL = {"C": 1, "B": 2, "A": 3, "S": 4}
 VAL_RANK = {v: k for k, v in RANK_VAL.items()}
@@ -75,7 +76,7 @@ class Weapon:
     def refine(self, p: Player) -> tuple[bool, str, int]:
         cost = self.cal_dust_consume()
         if cost > p.dust:
-            return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨",0
+            return False, f"「粉尘不足」需要{cost}个粉尘✨才能精炼。\n当前武器：Lv.{self.rank}｜评分：{self.score}｜持有粉尘：{p.dust}✨", 0
         p.dust -= cost
         # 权重设置：数字越大，权重越小
         weights_matrix = [
@@ -173,6 +174,8 @@ class Player:
     tear: int = 0
     counters: Counters = field(default_factory=Counters.today)
     config: Pconfig = field(default_factory=Pconfig)
+    skills: Dict[str, int] = field(default_factory=dict)
+    equipped_skills: List[str] = field(default_factory=list)
 
     # ---- 兼容层（短期让 p["diamond"] 还能用）----
     def __getitem__(self, k: str):
@@ -212,6 +215,8 @@ class Player:
             tear=d.get("tear", 0),
             counters=Counters.from_dict(d.get("counters", {})),
             config=Pconfig.from_dict(d.get("config", {})),
+            skills=d.get("skills", {}),
+            equipped_skills=d.get("equipped_skills", []),
         )
 
     def to_dict(self) -> Dict:
@@ -229,6 +234,8 @@ class Player:
             "tear": self.tear,
             "counters": self.counters.to_dict(),
             "config": self.config.to_dict(),
+            "skills": self.skills,
+            "equipped_skills": self.equipped_skills
         }
 
     def extra_distribute(self, attribute: str):
@@ -257,6 +264,7 @@ class Player:
         detail.append(f"╭─ 武器 ─{'─' * 7}")
         detail.append(f"│ {self.weapon.name} {self.weapon.rank}级")
         detail.append(f"│ 评分: {self.weapon.score}")
+        detail.append(f"│ 技能: {get_equipped_skill_names(player=self)}")
 
         # 属性区域
         detail.append(f"╭─ 属性 ─{'─' * 7}")
@@ -361,16 +369,115 @@ def get_player(uid: str, gid: str, name: str) -> Player:
         p.weapon = Weapon()
     return p
 
+
 def get_players_by_gid(gid: str) -> List[Player]:
     list_players = []
     db = load_players()
     for item in db.values():
         p = Player.from_dict(item)
-        if p.gid==gid:
+        if p.gid == gid:
             list_players.append(p)
     return list_players
 
-def put_players(players: List[Player]) :
+
+def get_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:
+    # 如果玩家已经拥有这个技能
+    if skill_id in player.skills.keys():
+        return False, f"玩家已经拥有技能[{skill_map.get(skill_id).get("name")}]"
+
+    # 如果技能槽未满（小于等于3个）
+    if len(player.skills) < 3:
+        player.skills.__setitem__(skill_id, 1)
+        put_player(player)
+        return True, f"技能[{skill_map.get(skill_id).get("name")}]获取成功"
+
+    # 如果技能槽已满（超过5个）
+    else:
+        # 找出未装备的技能进行替换
+        replaceable_skills = []
+        for skill_id_in_dict in player.skills.keys():
+            # 假设 player 有一个 equipped_skills 属性来存储已装备的技能名称列表
+            if skill_id_in_dict in player.equipped_skills:
+                continue  # 跳过已装备的技能
+            replaceable_skills.append(skill_id_in_dict)
+
+        # 如果没有可替换的技能（所有技能都已装备）
+        if not replaceable_skills:
+            return False, "所有技能都已装备，无法替换，请先卸下某个技能"
+
+        # 替换第一个可替换的技能（或者你可以实现更复杂的替换逻辑）
+        skill_to_remove = replaceable_skills[0]
+        player.skills.pop(skill_to_remove)
+        player.skills.__setitem__(skill_id, 1)
+
+        put_player(player)
+
+        return True, f"已遗忘技能[{skill_map.get(skill_to_remove).get("name")}]，并成功学习[{skill_map.get(skill_id).get("name")}]"
+
+
+def equip_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:
+    # 检查玩家是否拥有该技能
+    if skill_id not in player.skills.keys():
+        return False, f"未学习技能[{skill_map.get(skill_id).get("name")}]，无法装配"
+
+    # 初始化 equipped_skills 属性（如果不存在）
+    if not hasattr(player, 'equipped_skills'):
+        player.equipped_skills = []
+
+    # 检查技能是否已经装备
+    if skill_id in player.equipped_skills:
+        return False, f"技能[{skill_map.get(skill_id).get("name")}]已经装配"
+
+    # 检查装备槽位限制（假设最多可以装备3个技能）
+    max_equipped = 1
+    if len(player.equipped_skills) >= max_equipped:
+        old_skill_id = player.equipped_skills.pop(0)
+        player.equipped_skills.append(skill_id)
+        put_player(player)
+        return True, f"装备槽已满（最多{max_equipped}个），已自动卸下技能[{skill_map.get(old_skill_id).get("name")}]，技能[{skill_map.get(skill_id).get("name")}]装配成功"
+
+    # 装备技能
+    player.equipped_skills.append(skill_id)
+
+    put_player(player)
+
+    return True, f"技能[{skill_map.get(skill_id).get("name")}]装配成功"
+
+
+def level_up_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:
+    # 检查玩家是否拥有该技能
+    if skill_id not in player.skills.keys():
+        return False, f"未学习技能[{skill_map.get(skill_id).get("name")}]，无法升级"
+
+    # 装备技能
+    player.skills[skill_id] += 1
+    put_player(player)
+
+    return True, f"技能[{skill_map.get(skill_id).get("name")}]升级成功，当前等级:{player.skills[skill_id]}"
+
+
+def forget_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:
+    if skill_id not in player.skills.keys():
+        return False, f"你愣了一下，好像你本来就不会这个技能"
+
+    player.skills.pop(skill_id)
+    put_player(player)
+    return True, f"技能[{skill_map.get(skill_id).get("name")}]已被成功遗忘，相关的记忆也随之消散..."
+
+
+def get_equipped_skill_names(player: Player) -> str:
+    config_loader = ConfigLoader()
+    skills_map = config_loader.get_skills_map(True)
+    equipped_skill_names = []
+    for skill_id in player.equipped_skills:
+        name = skills_map.get(skill_id).get("name")
+        equipped_skill_names.append(name)
+    if len(equipped_skill_names) == 0:
+        return "无"
+    return ",".join(equipped_skill_names)
+
+
+def put_players(players: List[Player]):
     db = load_players()
     for p in players:
         db[f"{p.gid}:{p.uid}"] = p.to_dict()

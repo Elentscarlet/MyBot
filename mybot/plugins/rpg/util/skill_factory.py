@@ -13,13 +13,13 @@ class SkillFactory:
         self.event_bus = event_bus
         self.evaluator = ExpressionEvaluator()
 
-    def create_skill(self, skill_id: str, owner) -> 'ConfigSkill':
+    def create_skill(self, skill_id: str, owner, level:int = None) -> 'ConfigSkill':
         """从配置创建技能"""
         skill_config = self.config_loader.get_skill_config(skill_id)
         if not skill_config:
             raise ValueError(f"技能配置不存在: {skill_id}")
 
-        return ConfigSkill(skill_config, owner, self.event_bus, self.evaluator)
+        return ConfigSkill(skill_config, owner, self.event_bus, self.evaluator,level)
 
     def create_buff(self, buff_id: str) -> 'Buff':
         """从配置创建Buff"""
@@ -49,11 +49,12 @@ class Buff:
 
 
 class ConfigSkill:
-    def __init__(self, config: Dict, owner, event_bus: EventBus, evaluator: ExpressionEvaluator):
+    def __init__(self, config: Dict, owner, event_bus: EventBus, evaluator: ExpressionEvaluator,level):
         self.config = config
         self.id = config['id']
         self.name = config.get('name', self.id)
         self.type = config.get('type', 'passive')
+        self.level = level if level else config.get('level', 1)
         self.owner = owner
         self.event_bus = event_bus
         self.evaluator = evaluator
@@ -64,6 +65,7 @@ class ConfigSkill:
         self.op_handlers = {
             'damage': self._execute_damage,
             'damage_reduction': self._execute_damage_reduction,
+            'add_damage': self._execute_add_damage,
             'reflect_damage': self._execute_damage_reflect,
             'heal': self._execute_heal,
             'apply_buff': self._execute_apply_buff,
@@ -99,15 +101,16 @@ class ConfigSkill:
             # 激活技能
             self.activate(event_data)
 
-            # 是否停止事件传播
-            return not trigger_config.get('stop_propagation', False)
+            return True
 
         return handler
 
     def _check_conditions(self, conditions: List[Dict], event_data: EventInfo, attacker_check: bool) -> bool:
         """检查触发条件"""
         context = self._create_execution_context(event_data)
-
+        # 自己不触发自己
+        if self == event_data.skill:
+            return False
         # 攻击者检查
         if self.owner.name == event_data.source.name:
             is_attacker = True
@@ -134,9 +137,10 @@ class ConfigSkill:
             'source': self.owner,
             'target': event_data.target,
             'skill': self,
-            'damage_type': 'physical',
+            'damage_type': event_data.damage_type ,
             'damage': event_data.amount,
-            'amount': event_data.amount
+            'amount': event_data.amount,
+            'op_type': event_data.op
         }
 
         return context
@@ -176,7 +180,7 @@ class ConfigSkill:
             current = getattr(self.owner, resource_type.upper(), 0)
             setattr(self.owner, resource_type.upper(), max(0, current - amount))
 
-    def _execute_effects(self, effects: List[Dict], context: Dict, event_data: EventInfo):
+    def _execute_effects(self, effects: List[Dict], context: Dict, event_data: EventInfo) :
         """执行技能效果"""
         for effect in effects:
             self._execute_single_effect(effect, context, event_data)
@@ -191,10 +195,7 @@ class ConfigSkill:
 
         if handler:
             # 根据操作类型调用相应的方法
-            if op in ['damage', 'damage_reduction', 'reflect_damage','leech']:
-                return handler(effect, context, event_data)
-            else:
-                return handler(effect, context)
+            return handler(effect, context, event_data)
         return None
 
     def _execute_damage(self, effect: Dict, context: Dict, event_data: EventInfo):
@@ -202,12 +203,13 @@ class ConfigSkill:
         formula = effect.get('formula', '0')
         damage_type = effect.get('damage_type', 'physical')
 
-        damage = self.evaluator.evaluate(formula, context) or 0
+        damage = int(self.evaluator.evaluate(formula, context) or 0)
         damage = self._cal_crit_damage(effect, context, damage)
         target = context.get('target')
         damage_event = EventInfo(source=self.owner, target=target, round_num=effect.get('round_num'))
         damage_event.skill = self
         damage_event.amount = damage
+        damage_event.damage_type = damage_type
         damage_event.op = effect.get('op')
         damage_event.is_crit = context.get('is_crit', False)
 
@@ -215,7 +217,11 @@ class ConfigSkill:
 
     def _execute_damage_reduction(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行伤害减免效果"""
-        reduction_formula = effect.get('reduction', '0')
+        if not event_data.can_reduce:
+            self.current_cooldown = 0
+            return False
+
+        reduction_formula = effect.get('formula', '0')
         reduction = int(self.evaluator.evaluate(reduction_formula, context) or 0)
 
         reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=effect.get('round_num'))
@@ -223,26 +229,45 @@ class ConfigSkill:
         reduction_event.amount = reduction
         reduction_event.op = effect.get('op')
         reduction_event.can_reflect = False
-        event_data.amount -= reduction
+        reduction_event.damage_type = effect.get('damage_type', 'physical')
+        event_data.amount_dict['reduction'] -= reduction
         event_data.sub_event.append(reduction_event)
+        return True
+
+    def _execute_add_damage(self, effect: Dict, context: Dict, event_data: EventInfo):
+        """执行伤害增加效果"""
+        dmg_formula = effect.get('formula', '0')
+        dmg = int(self.evaluator.evaluate(dmg_formula, context) or 0)
+        dmg_event = EventInfo(source=self.owner, target=event_data.target, round_num=effect.get('round_num'))
+        dmg_event.skill = self
+        dmg_event.amount = dmg
+        dmg_event.op = effect.get('op')
+        dmg_event.can_reflect = False
+        dmg_event.damage_type = effect.get('damage_type', 'physical')
+        event_data.amount_dict['fire'] += dmg
+
+        event_data.sub_event.append(dmg_event)
+        return True
 
     def _execute_damage_reflect(self, effect: Dict, context: Dict, event_data: EventInfo):
+        if not event_data.can_reflect:
+            self.current_cooldown = 0
+            return False
         """执行伤害反射效果"""
         reflect_formula = effect.get('formula', '0')
         reflect_type = effect.get('damage_type', 'physical')
         reflect_target = event_data.source  # 默认反射给伤害来源
 
-        if not event_data.can_reflect:
-            return
         # 计算反射伤害
-        reflect_damage = self.evaluator.evaluate(reflect_formula, context) or 0
+        reflect_damage = int (self.evaluator.evaluate(reflect_formula, context) or 0)
         reflect_event = EventInfo(source=self.owner, target=reflect_target, round_num=event_data.round_num,
                                   can_reflect=False)
         reflect_event.skill = self
         reflect_event.amount = reflect_damage
+        reflect_event.damage_type = reflect_type
         reflect_event.op = effect.get('op')
-
         event_data.sub_event.append(reflect_event)
+        return True
 
     def _execute_leech(self, effect, context, event_data: EventInfo):
         """执行吸血效果"""
@@ -273,16 +298,25 @@ class ConfigSkill:
         context["is_crit"] = False
         return dmg
 
-    def _execute_heal(self, effect: Dict, context: Dict):
+    def _execute_heal(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行治疗效果"""
         formula = effect.get('formula', '0')
         target_ref = effect.get('target', 'target')
+        can_apply_on_death = effect.get('can_apply_on_death', False)
 
-        heal_amount = self.evaluator.evaluate(formula, context) or 0
+        heal_amount = int(self.evaluator.evaluate(formula, context) or 0)
         target = context.get(target_ref)
 
         if target and heal_amount > 0:
-            target.heal(heal_amount)
+            target.heal(heal_amount,can_apply_on_death)
+
+        heal_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
+                                can_reflect=False)
+        heal_event.skill = self
+        heal_event.amount = heal_amount
+        heal_event.last_amount = heal_amount
+        heal_event.op = effect.get('op')
+        event_data.sub_event.append(heal_event)
 
     def _execute_apply_buff(self, effect: Dict, context: Dict):
         """执行施加增益效果"""

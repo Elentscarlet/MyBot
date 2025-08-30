@@ -50,7 +50,8 @@ def player_to_entity(player) -> Entity:
             max(
                 0.0,
                 BASE_STATS["CRIT"]
-                + (getattr(player.points, "crit", 0) + getattr(player.extra_points, "crit", 0)) / 100.0
+                # 一点暴击属性 2%暴击
+                + (getattr(player.points, "crit", 0) + getattr(player.extra_points, "crit", 0)) / 50.0
                 + weapon_score * WEAPON_SCORE_COEF["CRIT"],
             ),
         ),

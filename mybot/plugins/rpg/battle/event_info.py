@@ -1,10 +1,11 @@
 # 战斗事件
 import uuid
+from collections import defaultdict
 from typing import Dict, Optional
 
 
 class EventInfo:
-    def __init__(self, source, target, round_num=0, is_crit=False, can_reflect=True, can_reduce=True, count_dict=None):
+    def __init__(self, source, target, round_num=0, is_crit=False, can_reflect=True, can_reduce=True,can_dodge =True, count_dict=None):
         # 行为发起者
         self.source = source
         # 行为目标
@@ -13,6 +14,10 @@ class EventInfo:
         self.round_num = round_num
         # 记录数值，一般为伤害，治疗量
         self.amount = 0
+        # 记录数值，子事件（该事件触发的其他事件）
+        self.amount_dict = defaultdict(int)
+        # 记录数值，展示给日志
+        self.last_amount = None
         # 当前操作
         self.op = None
         # 所用的技能
@@ -25,6 +30,8 @@ class EventInfo:
         self.can_reflect = can_reflect
         # 是否可以被减免
         self.can_reduce = can_reduce
+        # 是否可以被闪避
+        self.can_dodge = can_dodge
         self.count_dict = count_dict if count_dict is not None else {}
         # 该事件下的子事件
         self.sub_event = []

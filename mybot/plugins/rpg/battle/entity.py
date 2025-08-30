@@ -52,15 +52,23 @@ class Entity:
         self.engine = None
 
     # ===============适配新系统=============
-    def take_damage(self, damage) -> float:
+    def take_damage(self, dmg_info: Dict[str, int]) -> float:
         """受到伤害"""
         if not self.is_alive:
             return 0
 
         # 计算实际伤害（考虑防御等）
         # 伤害减免率 = DEF / (DEF + 40) * 100%
+        actual_damage = 0
         damage_reduction = self.DEF / (self.DEF + 40)
-        actual_damage = max(0, int(damage * (1 - damage_reduction)))
+        for dmg_type, value in dmg_info.items():
+            if dmg_type == "physical":
+                actual_damage += max(0, int(value * (1 - damage_reduction)))
+            else:
+                actual_damage += value
+
+        if actual_damage <= 0:
+            actual_damage = 0
 
         self.HP = max(0, self.HP - actual_damage)
 
@@ -71,13 +79,15 @@ class Entity:
 
         return actual_damage
 
-    def heal(self, amount: float) -> float:
+    def heal(self, amount: float, can_apply_on_death: bool = False) -> float:
         """接受治疗"""
-        if not self.is_alive:
+        if not self.is_alive and not can_apply_on_death:
             return 0
 
         actual_heal = min(amount, self.MAX_HP - self.HP)
         self.HP += actual_heal
+        if self.HP > 0:
+            self.is_alive = True
 
         return actual_heal
 

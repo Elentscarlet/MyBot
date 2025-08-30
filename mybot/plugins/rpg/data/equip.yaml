@@ -10,7 +10,7 @@ rules:
     give: [ attack_bonus ]
   # 防御大于等于8给被动
   - when: { def__gte: 8 }
-    give: [ thorns,passive_thorns ]
+    give: [ passive_thorns ]
   # 体力大于等于8给被动
   - when: { hp_gte: 8 }
     give: [ life_steal ]

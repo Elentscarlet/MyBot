@@ -6,7 +6,7 @@ from mybot.plugins.rpg.util.config_loader import ConfigLoader
 
 
 class EventBus:
-    config_loader = ConfigLoader('./config/')
+    config_loader = ConfigLoader()
     def __init__(self):
         self._listeners: Dict[str, List[tuple]] = {}
         self._event_type_count: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))

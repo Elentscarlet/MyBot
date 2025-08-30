@@ -6,7 +6,7 @@ from typing import Dict, List, Any
 
 
 class ConfigLoader:
-    def __init__(self, config_path: str):
+    def __init__(self):
         self.config_path = pathlib.Path(__file__).resolve().parent.parent / "data"
         self.skills_config = self._load_config('skills.yaml')
         self.buffs_config = self._load_config('buffs.yaml')
@@ -38,6 +38,13 @@ class ConfigLoader:
     def get_all_skills(self) -> Dict[str, Dict]:
         """获取所有技能配置"""
         return self.skills_config
+
+    def get_skills_map(self, is_gacha_skill: bool) -> Dict[str, Dict]:
+        skills_map = {}
+        for k, v in self.skills_config.items():
+            if (is_gacha_skill and v["get_by_gacha"]) or (not is_gacha_skill and not v["get_by_gacha"]):
+                skills_map[k] = v
+        return skills_map
 
     def _build_event_limits(self):
         """构建事件次数限制映射"""
