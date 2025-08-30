@@ -99,7 +99,7 @@
 
   effects:
     - op: "leech"
-      formula: "damage * (0.1 + source.HP * 0.001)"
+      formula: "damage * (0.1 + source.MAX_HP * 0.001)"
 
 # 装备技能，随机抽取：============================================
 
