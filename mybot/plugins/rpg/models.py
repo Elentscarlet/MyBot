@@ -471,9 +471,10 @@ def get_equipped_skill_names(player: Player) -> str:
     config_loader = ConfigLoader()
     skills_map = config_loader.get_skills_map(True)
     equipped_skill_names = []
-    for skill_id in player.equipped_skills:
-        name = skills_map.get(skill_id).get("name")
-        equipped_skill_names.append(name)
+    for skill_id, skill_level in player.skills.items():
+        if skill_id in player.equipped_skills:
+            name = skills_map.get(skill_id).get("name")
+            equipped_skill_names.append(name + f"[{skill_level}]")
     if len(equipped_skill_names) == 0:
         return "无"
     return ",".join(equipped_skill_names)
