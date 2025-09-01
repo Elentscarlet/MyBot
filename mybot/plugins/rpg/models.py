@@ -450,6 +450,8 @@ def level_up_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) ->
         return False, f"未学习技能[{skill_map.get(skill_id).get("name")}]，无法升级"
 
     # 装备技能
+    if player.skills[skill_id] >= 5:
+        return False, f"技能[{skill_map.get(skill_id).get("name")}]已经满级，当前等级:{player.skills[skill_id]}"
     player.skills[skill_id] += 1
     put_player(player)
 

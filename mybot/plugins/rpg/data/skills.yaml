@@ -139,7 +139,7 @@
         - expr: "damage > 0 and op_type == 'damage'"
   effects:
     - op: "add_damage"
-      formula: "skill.level*10"
+      formula: "skill.level*8"
       damage_type: "fire"
 
 - id: resurrect

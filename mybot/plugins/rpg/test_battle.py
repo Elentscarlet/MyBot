@@ -14,18 +14,18 @@ def main():
     p1 = Player(uid="1", gid="1", name="Wym")
     p2 = Player(uid="2", gid="1", name="Bob")
     # 给玩家分配基础属性和武器
-    p1.points.str = 7
-    p1.points.hp = 7
-    p1.points.def_ =7
-    p1.points.agi = 7
-    p1.points.crit = 20
+    p1.points.str = 8
+    p1.points.hp = 8
+    p1.points.def_ =1
+    p1.points.agi = 8
+    p1.points.crit = 0
     p1.config.battle_report_model = 0
     p1.weapon = Weapon(name="测试剑", slots=[1, 1, 1])
-    p2.points.str = 7
-    p2.points.hp = 7
-    p2.points.def_ = 7
-    p2.points.agi = 7
-    p2.points.crit = 2
+    p2.points.str = 10
+    p2.points.hp = 8
+    p2.points.def_ = 9
+    p2.points.agi = 0
+    p2.points.crit = 0
     p2.weapon = Weapon(name="测试斧", slots=[1, 1, 1])
 
     result, logs = simulate_pvp_with_skills(p1, p2,10,0)

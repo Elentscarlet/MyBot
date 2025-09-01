@@ -167,6 +167,8 @@ async def _(event: MessageEvent):
         return
 
     res, msg = level_up_skill(p, skill_id, skills_map)
+    if not res:
+        p.dust += 2000
     put_player(p)
     await _level_up_skill.finish(msg)
 
