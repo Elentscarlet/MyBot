@@ -29,16 +29,16 @@ def refine_cost(next_val: int) -> int:
 
 @dataclass
 class Points:
-    str: int = 8
-    def_: int = 6  # 注意字段名从 def -> def_，防止关键字冲突
-    hp: int = 6
-    agi: int = 6
-    crit: int = 0
+    str: int = 7
+    def_: int = 4  # 注意字段名从 def -> def_，防止关键字冲突
+    hp: int = 4
+    agi: int = 4
+    crit: int = 4
 
     @staticmethod
     def default():
-        # 固定模板：力量8、防御6、体力6、敏捷6、暴击0（总计26点）
-        return Points(str=8, def_=6, hp=6, agi=6, crit=0)
+        # 固定模板：力量7、防御4、体力4、敏捷4、暴击0（总计26点）
+        return Points(str=7, def_=4, hp=4, agi=4, crit=4)
 
     @staticmethod
     def from_dict(d: Dict) -> "Points":

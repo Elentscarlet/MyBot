@@ -18,13 +18,13 @@ async def _(event: MessageEvent):
 
     m = re.match(r"^加点\s*([0-9]{5})", re_match)
     if not m:
-        await redistribute_m.finish("格式错误，请输入：加点99080 或 加点 99080")
+        await redistribute_m.finish("格式错误，请输入：加点99040 或 加点 99040")
     digits = m.group(1)
     points = [int(x) for x in digits]
     total = sum(points)
-    if total > 26:
+    if total > 23:
         for i in range(4, -1, -1):
-            if total <= 26:
+            if total <= 23:
                 break
             remove = min(points[i], total - 26)
             points[i] -= remove
