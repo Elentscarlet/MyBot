@@ -26,7 +26,7 @@ async def _(event: MessageEvent):
         for i in range(4, -1, -1):
             if total <= 23:
                 break
-            remove = min(points[i], total - 26)
+            remove = min(points[i], total - 23)
             points[i] -= remove
             total -= remove
     p.points = Points(
