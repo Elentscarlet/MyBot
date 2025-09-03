@@ -225,6 +225,10 @@ class BattleSystem:
 
     def _handle_take_damage(self, event_data: EventInfo):
 
+        if event_data.is_dodged:
+            event_data.last_amount = 0
+            return
+
         dmg_dict = defaultdict(int)
         dmg_dict[event_data.damage_type] += event_data.amount
         for k, v in event_data.amount_dict.items():
