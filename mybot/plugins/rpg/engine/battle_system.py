@@ -206,7 +206,6 @@ class BattleSystem:
         # 闪避判定
         if event_data.can_dodge:
             if event_data.target.check_dodged():
-                event_data.last_amount = 0
                 event_data.is_dodged = True
                 event_data.can_reduce = False
                 event_data.can_reflect = False
