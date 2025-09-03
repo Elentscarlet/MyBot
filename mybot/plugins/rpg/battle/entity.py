@@ -4,8 +4,6 @@ from dataclasses import dataclass, fields, field
 from enum import Enum
 from typing import Dict, List, Any
 
-from pygments.lexer import default
-
 
 class BuffStackType(Enum):
     """Buff叠加类型"""
