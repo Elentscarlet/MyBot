@@ -6,7 +6,7 @@
   duration: 1
   max_stack: 99
   stack_type: "INTENSITY"
-  description: "增加攻击1点，防御1点,敏捷1点，暴击1%"
+  description: "增加攻击1点,防御1点,敏捷1点，暴击1%"
   turn_end:
     - duration: -1
     - stack: 0
