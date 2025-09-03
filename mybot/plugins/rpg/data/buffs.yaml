@@ -7,7 +7,7 @@
   max_stack: 99
   stack_type: "INTENSITY"
   description: "增加攻击1点，防御1点,敏捷1点，暴击1%"
-  changes_on_turn_end:
+  turn_end:
     - duration: -1
     - stack: 0
   effects:
@@ -29,11 +29,11 @@
   is_positive: false
   can_dispel: true
   can_resist: true
-  duration: 3
+  duration: 5
   max_stack: 5
-  stack_type: "DURATION"
+  stack_type: "INTENSITY"
   description: "降低目标防御5点"
-  changes_on_turn_end:
+  turn_end:
     - duration: -1
     - stack: 0
   effects:

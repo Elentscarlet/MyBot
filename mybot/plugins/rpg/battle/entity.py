@@ -8,7 +8,7 @@ from typing import Dict, List, Any
 class BuffStackType(Enum):
     """Buff叠加类型"""
     NONE = 0  # 不可叠加
-    DURATION = 1  # 刷新持续时间
+    DURATION = 1  # 增加持续时间
     INTENSITY = 2  # 叠加层数
     BOTH = 3  # 同时叠加层数和持续时间
 
@@ -67,6 +67,14 @@ def create_buff_from_dict(data: Dict[str, Any]) -> Buff:
     # 处理 stack_type 字符串转换为枚举
     if 'stack_type' in data and isinstance(data['stack_type'], str):
         data['stack_type'] = BuffStackType[data['stack_type']]
+
+    # 处理 changes_on_turn_end - 将列表转换为字典
+    if 'turn_end' in data:
+        changes_list = data['turn_end']
+        changes_dict = {}
+        for change_dict  in changes_list:
+            changes_dict.update(change_dict)
+        data['changes_on_turn_end'] = changes_dict
 
     # 只保留字典中与Buff字段匹配的键值对
     filtered_data = {k: v for k, v in data.items() if k in field_names}
@@ -225,9 +233,9 @@ class Entity:
     def update_buffs(self):
         """更新Buff持续时间"""
         for buff in self.buffs:
-            d = buff.property_change.get("duration", -1)
+            d = buff.changes_on_turn_end.get("duration", -1)
             buff.duration += d
-            s = buff.property_change.get("stack", -1)
+            s = buff.changes_on_turn_end.get("stack", -1)
             buff.current_stack += s
             if buff.duration <= 0 or buff.current_stack <= 0:
                 self.buffs.remove(buff)
@@ -248,13 +256,18 @@ class Entity:
                 continue
 
             # 找到相同ID的buff，根据堆叠类型处理
+            # 时间堆叠，加时间，重置层数
             if existing_buff.stack_type == BuffStackType.DURATION:
                 existing_buff.duration += buff.duration
+                existing_buff.current_stack = buff.current_stack
+            # 层数堆叠，加层数，重置时间
             elif existing_buff.stack_type == BuffStackType.INTENSITY:
                 existing_buff.current_stack = min(
                     existing_buff.max_stack,
                     existing_buff.current_stack + buff.current_stack
                 )
+                existing_buff.duration = buff.duration
+            # 时间&层数堆叠，加层数，加时间
             elif existing_buff.stack_type == BuffStackType.BOTH:
                 existing_buff.duration += buff.duration
                 existing_buff.current_stack = min(

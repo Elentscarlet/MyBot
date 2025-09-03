@@ -80,7 +80,7 @@
     - event_type: "damage_calc"
       is_attacker: false
       conditions:
-        - expr: "damage > 0 and damage_type == 'physical'"
+        - expr: "damage > 0 and damage_type == 'physical' and is_dodged == False"
 
   effects:
     - op: "damage_reduction"
@@ -98,7 +98,7 @@
     - event_type: "after_take_damage"
       is_attacker: true
       conditions:
-        - expr: "damage >0 and damage_type == 'physical'"
+        - expr: "damage >0 and damage_type == 'physical' and is_dodged == False"
       priority: 2
 
   effects:
@@ -112,12 +112,12 @@
   cd: 0
   stop_propagation: true
   get_by_gacha: false
-  description: "【基础技能】【暴击>=8获取】破甲：暴击时降低敌方护甲5点，持续2回合，不可叠加"
+  description: "【基础技能】【暴击>=8获取】破甲：暴击时降低敌方护甲5点，持续5回合，可以叠加"
   triggers:
     - event_type: "damage_calc"
       is_attacker: true
       conditions:
-        - expr: "damage >0 and damage_type == 'physical' and is_crit == True"
+        - expr: "damage >0 and damage_type == 'physical' and is_crit == True and is_dodged == False"
       priority: 2
 
   effects:
@@ -162,7 +162,7 @@
     - event_type: "damage_calc"
       is_attacker: true
       conditions:
-        - expr: "damage > 0 and op_type == 'damage'"
+        - expr: "damage > 0 and op_type == 'damage' and is_dodged == False "
   effects:
     - op: "add_damage"
       formula: "skill.level*8"

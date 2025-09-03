@@ -115,6 +115,7 @@ class ConfigSkill:
             'amount': event_data.amount,
             'op_type': event_data.op,
             'is_crit': event_data.is_crit,
+            'is_dodged': event_data.is_dodged,
         }
 
         return context
@@ -316,7 +317,7 @@ class ConfigSkill:
         buff_event = EventInfo(source=self.owner, target=target,can_dodge=False,can_reflect=False,can_reduce=False)
         buff_event.skill = self
         buff_event.op = effect.get('op')
-        buff_event.additional_msg = buff.description + f"(*{stack})"
+        buff_event.additional_msg = buff.description + f"(累计{stack}层)"
         event_data.sub_event.append(buff_event)
 
     def update_cooldown(self):

@@ -63,6 +63,7 @@ class BattleSystem:
     def _register_core_handlers(self):
         """注册核心事件处理器"""
         self.event_bus.subscribe(BattleEvent.ROUND_START, self._handle_round_start)
+        self.event_bus.subscribe(BattleEvent.AFTER_ATTACK, self._handle_after_attack)
         self.event_bus.subscribe(BattleEvent.ROUND_END, self._handle_round_end)
 
     def add_unit(self, unit: Entity):
@@ -119,6 +120,10 @@ class BattleSystem:
                 event = self.pop_event()
                 processed_events += 1
                 self.event_tracker.add_event_to_chain(event, getattr(event, 'parent_event_id', None))
+
+                # 攻击后阶段:闪避计算
+                self.event_bus.publish(BattleEvent.AFTER_ATTACK, event)
+
                 # 伤害计算
                 self.event_bus.publish(BattleEvent.DAMAGE_CALC, event)
 
@@ -134,6 +139,10 @@ class BattleSystem:
                 for e in event.sub_event:
                     self.put_event(e)
                     self.event_tracker.add_event_to_chain(e, event.event_id)
+
+            # 交換順序
+            attacker, defender = defender, attacker
+
             # 可选：可视化事件链
             res = ""
             if self.report_mode == 0:
@@ -146,13 +155,10 @@ class BattleSystem:
             for re in res:
                 self.battle_log.append(re)
 
-            # 交換順序
-            attacker, defender = defender, attacker
-
             """结束当前回合"""
+            self.current_round += 1
             self.event_bus.publish(BattleEvent.ROUND_END,round_data)
 
-            self.current_round += 1
         self.end_battle()
 
     def end_battle(self):
@@ -195,6 +201,17 @@ class BattleSystem:
             self.battle_log.append(f"第 {event_data.round_num} 回合开始!")
         return True
 
+    def _handle_after_attack(self,event_data: EventInfo) -> bool:
+
+        # 闪避判定
+        if event_data.can_dodge:
+            if event_data.target.check_dodged():
+                event_data.last_amount = 0
+                event_data.is_dodged = True
+                event_data.can_reduce = False
+                event_data.can_reflect = False
+        return True
+
     def _handle_round_end(self, event_data: EventInfo) -> bool:
         """处理回合结束"""
         hp_log = ""
@@ -213,14 +230,6 @@ class BattleSystem:
         for k, v in event_data.amount_dict.items():
             dmg_dict[k] += v
 
-        # 闪避判定
-        if event_data.can_dodge:
-            if event_data.target.check_dodged():
-                event_data.last_amount = 0
-                event_data.is_dodged = True
-                event_data.can_reduce = False
-                event_data.can_reflect = False
-                return
         # 计算伤害
         if event_data.op == "damage" or event_data.op == "reflect_damage":
             event_data.last_amount = 0

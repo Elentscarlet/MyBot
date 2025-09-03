@@ -79,9 +79,8 @@ class BattleEvent:
     BATTLE_END = "battle_end"
 
     # 单位行动事件
-    BEFORE_ACTION = "before_action"
-    AFTER_ACTION = "after_action"
     ATTACK = "attack"
+    AFTER_ATTACK = "after_attack"
 
     # 伤害相关事件
     DAMAGE_CALC = "damage_calc"
