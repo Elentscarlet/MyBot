@@ -111,7 +111,7 @@ class ConfigSkill:
             'target': event_data.target,
             'skill': self,
             'damage_type': event_data.damage_type,
-            'damage': event_data.amount,
+            'damage': event_data.last_amount if event_data.last_amount is not None else event_data.amount,
             'amount': event_data.amount,
             'op_type': event_data.op,
             'is_crit': event_data.is_crit,
@@ -190,7 +190,7 @@ class ConfigSkill:
         damage_event.can_dodge = effect.get('can_dodge', False)
         damage_event.is_crit = context.get('is_crit', False)
 
-        event_data.sub_event.append(damage_event)
+        event_data.add_sub_event(damage_event)
 
     def _execute_damage_reduction(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行伤害减免效果"""
@@ -209,7 +209,7 @@ class ConfigSkill:
         reduction_event.can_reflect = False
         reduction_event.damage_type = effect.get('damage_type', 'physical')
         event_data.amount_dict['reduction'] -= reduction
-        event_data.sub_event.append(reduction_event)
+        event_data.add_sub_event(reduction_event)
         return True
 
     def _execute_add_damage(self, effect: Dict, context: Dict, event_data: EventInfo):
@@ -224,7 +224,7 @@ class ConfigSkill:
         dmg_event.damage_type = effect.get('damage_type', 'physical')
         event_data.amount_dict['fire'] += dmg
 
-        event_data.sub_event.append(dmg_event)
+        event_data.add_sub_event(dmg_event)
         return True
 
     def _execute_damage_reflect(self, effect: Dict, context: Dict, event_data: EventInfo):
@@ -244,7 +244,7 @@ class ConfigSkill:
         reflect_event.amount = reflect_damage
         reflect_event.damage_type = reflect_type
         reflect_event.op = effect.get('op')
-        event_data.sub_event.append(reflect_event)
+        event_data.add_sub_event(reflect_event)
         return True
 
     def _execute_leech(self, effect: Dict, context: Dict, event_data: EventInfo):
@@ -265,7 +265,7 @@ class ConfigSkill:
         leech_event.skill = self
         leech_event.amount = leech_amount
         leech_event.op = effect.get('op')
-        event_data.sub_event.append(leech_event)
+        event_data.add_sub_event(leech_event)
 
     def _cal_crit_damage(self, effect: Dict, context: Dict, dmg) -> float:
         source = context.get('source')
@@ -298,7 +298,7 @@ class ConfigSkill:
         heal_event.amount = heal_amount
         heal_event.last_amount = heal_amount
         heal_event.op = effect.get('op')
-        event_data.sub_event.append(heal_event)
+        event_data.add_sub_event(heal_event)
 
     def _execute_apply_buff(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行施加增益/减益效果"""
@@ -318,7 +318,7 @@ class ConfigSkill:
         buff_event.skill = self
         buff_event.op = effect.get('op')
         buff_event.additional_msg = buff.description + f"(累计{stack}层)"
-        event_data.sub_event.append(buff_event)
+        event_data.add_sub_event(buff_event)
 
     def update_cooldown(self):
         """更新冷却时间"""

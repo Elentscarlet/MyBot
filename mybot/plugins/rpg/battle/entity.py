@@ -200,6 +200,9 @@ class Entity:
         if actual_damage <= 0:
             actual_damage = 0
 
+        if actual_damage > self.HP:
+            actual_damage = self.HP
+
         self.HP = max(0, self.HP - actual_damage)
 
         # 检查死亡
@@ -207,7 +210,7 @@ class Entity:
             self.is_alive = False
             self.HP = 0
 
-        return actual_damage
+        return int(actual_damage)
 
     def check_dodged(self) -> bool:
         min_dodge = 0.01  # 1% minimum chance

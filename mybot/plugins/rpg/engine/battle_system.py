@@ -119,7 +119,7 @@ class BattleSystem:
             while self.event_queue.qsize() > 0 and processed_events < max_events:
                 event = self.pop_event()
                 processed_events += 1
-                self.event_tracker.add_event_to_chain(event, getattr(event, 'parent_event_id', None))
+                self.event_tracker.add_event_to_chain(event, event.parent_event_id)
 
                 # 攻击后阶段:闪避计算
                 self.event_bus.publish(BattleEvent.AFTER_ATTACK, event)
@@ -133,12 +133,8 @@ class BattleSystem:
                 # 伤害结算后
                 self.event_bus.publish(BattleEvent.AFTER_TAKE_DAMAGE, event)
 
-                # 日志记录
-                # self.event_bus.publish(BattleEvent.AFTER_ACTION, event)
-
                 for e in event.sub_event:
                     self.put_event(e)
-                    self.event_tracker.add_event_to_chain(e, event.event_id)
 
             # 交換順序
             attacker, defender = defender, attacker

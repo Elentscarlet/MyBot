@@ -109,6 +109,8 @@ def simulate_pvp_with_skills(
     # #测试
     # skill = skill_factory.create_skill("full_power", ent_a)
     # ent_a.skills.append(skill)
+    # skill = skill_factory.create_skill("thorns", ent_b)
+    # ent_b.skills.append(skill)
 
     # 添加到战斗系统
     battle_system.add_unit(ent_a)
