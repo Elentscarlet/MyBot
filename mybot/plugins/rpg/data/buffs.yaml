@@ -1,10 +1,42 @@
-- id: haste_buff
-  name: 迅捷
-  dispellable: true
-  duration_turns: 2
-  max_stacks: 3
-  tick_trigger: on_turn_start
-  tick_effects:
-    - op: stat_pct
-      stat: "agi"
-      value: 20
+- id: full_power
+  name: 战意高昂
+  is_positive: true
+  can_dispel: true
+  can_resist: false
+  duration: 1
+  max_stack: 99
+  stack_type: "INTENSITY"
+  description: "增加攻击1点，防御1点,敏捷1点，暴击1%"
+  changes_on_turn_end:
+    - duration: -1
+    - stack: 0
+  effects:
+    - op: property_change
+      stat: "ATK"
+      value: 1
+    - op: property_change
+      stat: "DEF"
+      value: 1
+    - op: property_change
+      stat: "AGI"
+      value: 1
+    - op: property_change
+      stat: "CRIT"
+      value: 0.01
+
+- id: armor_break
+  name: 破甲
+  is_positive: false
+  can_dispel: true
+  can_resist: true
+  duration: 3
+  max_stack: 5
+  stack_type: "DURATION"
+  description: "降低目标防御5点"
+  changes_on_turn_end:
+    - duration: -1
+    - stack: 0
+  effects:
+    - op: property_change
+      stat: "DEF"
+      value: -5

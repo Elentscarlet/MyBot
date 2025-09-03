@@ -106,6 +106,10 @@ def simulate_pvp_with_skills(
     equip_skills_for_player(player_a, ent_a,skill_factory)
     equip_skills_for_player(player_b, ent_b,skill_factory)
 
+    # #测试
+    # skill = skill_factory.create_skill("full_power", ent_a)
+    # ent_a.skills.append(skill)
+
     # 添加到战斗系统
     battle_system.add_unit(ent_a)
     battle_system.add_unit(ent_b)

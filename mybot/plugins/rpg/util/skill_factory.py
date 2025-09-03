@@ -1,8 +1,8 @@
 import random
-from typing import Dict, Callable, List, Any
+from typing import Dict, Callable, List
 
 from .expression_evaluator import ExpressionEvaluator
-from ..battle.entity import Entity
+from ..battle.entity import Buff, create_buff_from_dict
 from ..battle.event_info import EventInfo
 from ..engine.event_bus import EventBus
 
@@ -13,43 +13,18 @@ class SkillFactory:
         self.event_bus = event_bus
         self.evaluator = ExpressionEvaluator()
 
-    def create_skill(self, skill_id: str, owner, level:int = None) -> 'ConfigSkill':
+    def create_skill(self, skill_id: str, owner, level: int = None) -> 'ConfigSkill':
         """从配置创建技能"""
         skill_config = self.config_loader.get_skill_config(skill_id)
         if not skill_config:
             raise ValueError(f"技能配置不存在: {skill_id}")
 
-        return ConfigSkill(skill_config, owner, self.event_bus, self.evaluator,level)
-
-    def create_buff(self, buff_id: str) -> 'Buff':
-        """从配置创建Buff"""
-        buff_config = self.config_loader.get_buff_config(buff_id)
-        if not buff_config:
-            raise ValueError(f"Buff配置不存在: {buff_id}")
-
-        return Buff(
-            buff_id,
-            buff_config.get('name', buff_id),
-            buff_config.get('duration', 1),
-            buff_config.get('modifiers', {})
-        )
-
-
-class Buff:
-    def __init__(self, buff_id: str, name: str, duration: int, modifiers: Dict[str, Any]):
-        self.id = buff_id
-        self.name = name
-        self.duration = duration
-        self.modifiers = modifiers
-
-    def apply_effect(self, unit: Entity):
-        """应用Buff效果"""
-        # 在实际游戏中，这里会根据modifiers修改单位属性
-        pass
+        return ConfigSkill(skill_config, owner, self.event_bus, self.evaluator, level, self.config_loader)
 
 
 class ConfigSkill:
-    def __init__(self, config: Dict, owner, event_bus: EventBus, evaluator: ExpressionEvaluator,level):
+    def __init__(self, config: Dict, owner, event_bus: EventBus, evaluator: ExpressionEvaluator, level, config_loader):
+        self.config_loader = config_loader
         self.config = config
         self.id = config['id']
         self.name = config.get('name', self.id)
@@ -69,8 +44,6 @@ class ConfigSkill:
             'reflect_damage': self._execute_damage_reflect,
             'heal': self._execute_heal,
             'apply_buff': self._execute_apply_buff,
-            'apply_debuff': self._execute_apply_debuff,
-            'modify_stat': self._execute_modify_stat,
             'leech': self._execute_leech
         }
 
@@ -137,10 +110,11 @@ class ConfigSkill:
             'source': self.owner,
             'target': event_data.target,
             'skill': self,
-            'damage_type': event_data.damage_type ,
+            'damage_type': event_data.damage_type,
             'damage': event_data.amount,
             'amount': event_data.amount,
-            'op_type': event_data.op
+            'op_type': event_data.op,
+            'is_crit': event_data.is_crit,
         }
 
         return context
@@ -180,7 +154,7 @@ class ConfigSkill:
             current = getattr(self.owner, resource_type.upper(), 0)
             setattr(self.owner, resource_type.upper(), max(0, current - amount))
 
-    def _execute_effects(self, effects: List[Dict], context: Dict, event_data: EventInfo) :
+    def _execute_effects(self, effects: List[Dict], context: Dict, event_data: EventInfo):
         """执行技能效果"""
         for effect in effects:
             self._execute_single_effect(effect, context, event_data)
@@ -204,13 +178,15 @@ class ConfigSkill:
         damage_type = effect.get('damage_type', 'physical')
 
         damage = int(self.evaluator.evaluate(formula, context) or 0)
-        damage = self._cal_crit_damage(effect, context, damage)
+        if effect.get('can_crit'):
+            damage = int(self._cal_crit_damage(effect, context, damage))
         target = context.get('target')
         damage_event = EventInfo(source=self.owner, target=target, round_num=effect.get('round_num'))
         damage_event.skill = self
         damage_event.amount = damage
         damage_event.damage_type = damage_type
         damage_event.op = effect.get('op')
+        damage_event.can_dodge = effect.get('can_dodge', False)
         damage_event.is_crit = context.get('is_crit', False)
 
         event_data.sub_event.append(damage_event)
@@ -224,7 +200,8 @@ class ConfigSkill:
         reduction_formula = effect.get('formula', '0')
         reduction = int(self.evaluator.evaluate(reduction_formula, context) or 0)
 
-        reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=effect.get('round_num'))
+        reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
+                                    can_reflect=False, can_dodge=False)
         reduction_event.skill = self
         reduction_event.amount = reduction
         reduction_event.op = effect.get('op')
@@ -238,11 +215,11 @@ class ConfigSkill:
         """执行伤害增加效果"""
         dmg_formula = effect.get('formula', '0')
         dmg = int(self.evaluator.evaluate(dmg_formula, context) or 0)
-        dmg_event = EventInfo(source=self.owner, target=event_data.target, round_num=effect.get('round_num'))
+        dmg_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
+                              can_reflect=False, can_dodge=False)
         dmg_event.skill = self
         dmg_event.amount = dmg
         dmg_event.op = effect.get('op')
-        dmg_event.can_reflect = False
         dmg_event.damage_type = effect.get('damage_type', 'physical')
         event_data.amount_dict['fire'] += dmg
 
@@ -259,9 +236,9 @@ class ConfigSkill:
         reflect_target = event_data.source  # 默认反射给伤害来源
 
         # 计算反射伤害
-        reflect_damage = int (self.evaluator.evaluate(reflect_formula, context) or 0)
+        reflect_damage = int(self.evaluator.evaluate(reflect_formula, context) or 0)
         reflect_event = EventInfo(source=self.owner, target=reflect_target, round_num=event_data.round_num,
-                                  can_reflect=False)
+                                  can_reflect=False, can_dodge=False)
         reflect_event.skill = self
         reflect_event.amount = reflect_damage
         reflect_event.damage_type = reflect_type
@@ -269,7 +246,10 @@ class ConfigSkill:
         event_data.sub_event.append(reflect_event)
         return True
 
-    def _execute_leech(self, effect, context, event_data: EventInfo):
+    def _execute_leech(self, effect: Dict, context: Dict, event_data: EventInfo):
+        if event_data.is_dodged:
+            self.current_cooldown = 0
+            return False
         """执行吸血效果"""
         leech_formula = effect.get('formula', '0')
         leech_target = context.get('source')  # 默认吸血给施法者
@@ -277,9 +257,10 @@ class ConfigSkill:
         # 计算吸血量
         leech_amount = int(self.evaluator.evaluate(leech_formula, context) or 0)
         if leech_amount > 0:
-            leech_target.heal(leech_amount)
+            leech_amount = leech_target.heal(leech_amount)
 
-        leech_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num, can_reflect=False)
+        leech_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
+                                can_reflect=False)
         leech_event.skill = self
         leech_event.amount = leech_amount
         leech_event.op = effect.get('op')
@@ -308,48 +289,35 @@ class ConfigSkill:
         target = context.get(target_ref)
 
         if target and heal_amount > 0:
-            target.heal(heal_amount,can_apply_on_death)
+            target.heal(heal_amount, can_apply_on_death)
 
         heal_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
-                                can_reflect=False)
+                               can_reflect=False)
         heal_event.skill = self
         heal_event.amount = heal_amount
         heal_event.last_amount = heal_amount
         heal_event.op = effect.get('op')
         event_data.sub_event.append(heal_event)
 
-    def _execute_apply_buff(self, effect: Dict, context: Dict):
-        """执行施加增益效果"""
-        buff_id = effect.get('buff_id')
-        duration = effect.get('duration', 1)
-        target_ref = effect.get('target', 'target')
+    def _execute_apply_buff(self, effect: Dict, context: Dict, event_data: EventInfo):
+        """执行施加增益/减益效果"""
+        stacks_formula = effect.get('stacks_formula', '1')
+        is_self_target = effect.get('is_self_target', False)
+        stacks = int(self.evaluator.evaluate(stacks_formula, context) or 0)
+        buff_config = self.config_loader.get_buff_config(effect.get('buff_id'))
+        buff = create_buff_from_dict(buff_config)
+        if is_self_target:
+            target = event_data.source
+        else:
+            target = event_data.target
 
-        target = context.get(target_ref)
-        if target and buff_id:
-            target.add_buff(buff_id, duration)
+        stack = target.add_buff(buff, event_data.source.id, stacks)
 
-    def _execute_apply_debuff(self, effect: Dict, context: Dict):
-        """执行施加减益效果"""
-        debuff_id = effect.get('debuff_id')
-        duration = effect.get('duration', 1)
-        target_ref = effect.get('target', 'target')
-
-        target = context.get(target_ref)
-        if target and debuff_id:
-            target.add_debuff(debuff_id, duration)
-
-    def _execute_modify_stat(self, effect: Dict, context: Dict):
-        """执行属性修改效果"""
-        stat = effect.get('stat')
-        value_formula = effect.get('value', '0')
-        target_ref = effect.get('target', 'target')
-
-        value = self.evaluator.evaluate(value_formula, context) or 0
-        target = context.get(target_ref)
-
-        if target and stat:
-            current = getattr(target, stat, 0)
-            setattr(target, stat, current + value)
+        buff_event = EventInfo(source=self.owner, target=target,can_dodge=False,can_reflect=False,can_reduce=False)
+        buff_event.skill = self
+        buff_event.op = effect.get('op')
+        buff_event.additional_msg = buff.description + f"(*{stack})"
+        event_data.sub_event.append(buff_event)
 
     def update_cooldown(self):
         """更新冷却时间"""

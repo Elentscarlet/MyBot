@@ -82,7 +82,6 @@ class BattleEvent:
     BEFORE_ACTION = "before_action"
     AFTER_ACTION = "after_action"
     ATTACK = "attack"
-    SKILL_CAST = "skill_cast"
 
     # 伤害相关事件
     DAMAGE_CALC = "damage_calc"

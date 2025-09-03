@@ -1,55 +1,176 @@
-# mybot/plugins/rpg/battle/entity.py
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
 import random
+import uuid
+from dataclasses import dataclass, fields, field
+from enum import Enum
+from typing import Dict, List, Any
 
-from mybot.plugins.rpg.battle.event_info import EventInfo
+from pygments.lexer import default
+
+
+class BuffStackType(Enum):
+    """Buff叠加类型"""
+    NONE = 0  # 不可叠加
+    DURATION = 1  # 刷新持续时间
+    INTENSITY = 2  # 叠加层数
+    BOTH = 3  # 同时叠加层数和持续时间
 
 
 @dataclass
-class StatsView:
-    ATK: int
-    DEF: int
-    AGI: int
-    INT: int
-    CRIT: float
-    HP: int
-    MAX_HP: int
+class Buff:
+    # buff唯一标识
+    id: str
+    # 描述
+    description: str
+
+    # 属性变化
+    property_change: dict
+    # buff/debuff 区分
+    is_positive: bool
+    # 剩余时间
+    duration: int
+    # 叠加机制
+    max_stack: int = 1
+    current_stack: int = 1
+    # 叠加类型
+    stack_type: BuffStackType = BuffStackType.NONE
+
+    # 条件表达式
+    available_expr: List[str] = field(default_factory=list)
+
+    # buff变化方式
+    changes_on_turn_end: Dict[str, int] = field(default_factory=dict)
+
+    # 来源
+    source_id: str = None
+
+    # 免疫和抵抗相关
+    can_resist: bool = False  # 是否可被抵抗
+    can_dispel: bool = True  # 是否可被驱散
 
 
-@dataclass
-class BuffState:
-    buff_id: str
-    stacks: int
-    remaining_turns: int
+def create_buff_from_dict(data: Dict[str, Any]) -> Buff:
+    # 获取Buff类的所有字段名
+    field_names = {f.name for f in fields(Buff)}
+
+    # 处理 effects 列表，转换为 property_change 字典
+    if 'effects' in data:
+        property_change = {}
+        for effect in data['effects']:
+            if effect['op'] == 'property_change':
+                stat = effect['stat']
+                value = effect['value']
+                property_change[stat] = value
+
+        # 将 property_change 添加到数据中
+        data['property_change'] = property_change
+        # 移除 effects 字段，因为它不是 Buff 类的字段
+        del data['effects']
+
+    # 处理 stack_type 字符串转换为枚举
+    if 'stack_type' in data and isinstance(data['stack_type'], str):
+        data['stack_type'] = BuffStackType[data['stack_type']]
+
+    # 只保留字典中与Buff字段匹配的键值对
+    filtered_data = {k: v for k, v in data.items() if k in field_names}
+
+    return Buff(**filtered_data)
 
 
 class Entity:
     """战斗期实体：被技能引擎调用的唯一对象类型。"""
 
     def __init__(self, name: str, base_stats: Dict[str, int | float], tag: str = ""):
+        self.id = uuid.uuid4()
         self.name = name
         self.tag = tag  # player/monster/boss等
         # 基础面板（不随战斗变化）
-        self.ATK = base_stats["ATK"]
-        self.DEF = base_stats["DEF"]
-        self.AGI = base_stats["AGI"]
-        self.CRIT = base_stats["CRIT"]
-        self.MAX_HP = base_stats["MAX_HP"]
-        self.HP = base_stats["MAX_HP"]
+        self._ATK = base_stats["ATK"]
+        self._DEF = base_stats["DEF"]
+        self._AGI = base_stats["AGI"]
+        self._CRIT = base_stats["CRIT"]
+        self._MAX_HP = base_stats["MAX_HP"]
+        self._HP = base_stats["MAX_HP"]
 
         # 战斗期可变状态
-        self._temp_pct: Dict[str, float] = {}  # 例如 {"AGI": +20.0}
         self.is_alive = True
         self.skills: List[Any] = []
-        self.buffs: Dict[str, Any] = {}
-        self.debuffs: Dict[str, Any] = {}
-        # 编队信息
-        self._enemies: List["Entity"] = []
-        self._allies: List["Entity"] = []
-        self._rng = random.Random()
+        self.buffs: List[Buff] = []
         # 技能引擎
         self.engine = None
+
+    # 属性访问器
+    @property
+    def ATK(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "ATK" in buff.property_change and buff.property_change["ATK"]:
+                value += buff.current_stack * buff.property_change["ATK"]
+        return max(0, self._ATK + value)
+
+    @ATK.setter
+    def ATK(self, value):
+        self._ATK = value
+
+    @property
+    def DEF(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "DEF" in buff.property_change and buff.property_change["DEF"]:
+                value += buff.current_stack * buff.property_change["DEF"]
+        # 防御可以被减成负数
+        return self._DEF + value
+
+    @DEF.setter
+    def DEF(self, value):
+        self._DEF = value
+
+    @property
+    def AGI(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "AGI" in buff.property_change and buff.property_change["AGI"]:
+                value += buff.current_stack * buff.property_change["AGI"]
+        return max(0, self._AGI + value)
+
+    @AGI.setter
+    def AGI(self, value):
+        self._AGI = value
+
+    @property
+    def CRIT(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "CRIT" in buff.property_change and buff.property_change["CRIT"]:
+                value += buff.current_stack * buff.property_change["CRIT"]
+        return max(0, self._CRIT + value)
+
+    @CRIT.setter
+    def CRIT(self, value):
+        self._CRIT = value
+
+    @property
+    def MAX_HP(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "MAX_HP" in buff.property_change and buff.property_change["MAX_HP"]:
+                value += buff.current_stack * buff.property_change["MAX_HP"]
+        return max(0, self._MAX_HP + value)
+
+    @MAX_HP.setter
+    def MAX_HP(self, value):
+        self._MAX_HP = value
+
+    @property
+    def HP(self) -> float:
+        value = 0
+        for buff in self.buffs:
+            if "HP" in buff.property_change and buff.property_change["HP"]:
+                value += buff.current_stack * buff.property_change["HP"]
+        return max(0, self._HP + value)
+
+    @HP.setter
+    def HP(self, value):
+        self._HP = value
 
     # ===============适配新系统=============
     def take_damage(self, dmg_info: Dict[str, int]) -> float:
@@ -60,7 +181,10 @@ class Entity:
         # 计算实际伤害（考虑防御等）
         # 伤害减免率 = DEF / (DEF + 40) * 100%
         actual_damage = 0
-        damage_reduction = self.DEF / (self.DEF + 40)
+        if self.DEF >= 0:
+            damage_reduction = self.DEF / (self.DEF + 40)
+        else:
+            damage_reduction = self.DEF / 20
         for dmg_type, value in dmg_info.items():
             if dmg_type == "physical":
                 actual_damage += max(0, int(value * (1 - damage_reduction)))
@@ -79,6 +203,15 @@ class Entity:
 
         return actual_damage
 
+    def check_dodged(self) -> bool:
+        min_dodge = 0.05  # 5% minimum chance
+        max_dodge = 0.95  # 95% maximum chance
+
+        prop = self.AGI / (self.AGI + 30)
+        prop = max(min_dodge, min(max_dodge, prop))  # Clamp between min and max
+
+        return random.random() < prop
+
     def heal(self, amount: float, can_apply_on_death: bool = False) -> float:
         """接受治疗"""
         if not self.is_alive and not can_apply_on_death:
@@ -91,25 +224,15 @@ class Entity:
 
         return actual_heal
 
-    def add_buff(self, buff_id: str, duration: int):
-        """添加增益效果"""
-        self.buffs[buff_id] = duration
-
-    def add_debuff(self, debuff_id: str, duration: int):
-        """添加减益效果"""
-        self.debuffs[debuff_id] = duration
-
     def update_buffs(self):
         """更新Buff持续时间"""
-        for buff_id in list(self.buffs.keys()):
-            self.buffs[buff_id] -= 1
-            if self.buffs[buff_id] <= 0:
-                del self.buffs[buff_id]
-
-        for debuff_id in list(self.debuffs.keys()):
-            self.debuffs[debuff_id] -= 1
-            if self.debuffs[debuff_id] <= 0:
-                del self.debuffs[debuff_id]
+        for buff in self.buffs:
+            d = buff.property_change.get("duration", -1)
+            buff.duration += d
+            s = buff.property_change.get("stack", -1)
+            buff.current_stack += s
+            if buff.duration <= 0 or buff.current_stack <= 0:
+                self.buffs.remove(buff)
 
     def update_skill_cooldowns(self):
         """更新技能冷却"""
@@ -117,87 +240,41 @@ class Entity:
             if hasattr(skill, 'update_cooldown'):
                 skill.update_cooldown()
 
-    def is_skill_ready(self, skill_id: str) -> bool:
-        """检查技能是否冷却完成"""
-        for skill in self.skills:
-            if hasattr(skill, 'id') and skill.id == skill_id:
-                return skill.current_cooldown <= 0
-        return False
-
-    # ===== 组队/选目标 =====
-    def set_enemies(self, enemies: List["Entity"]):
-        self._enemies = [e for e in enemies if e is not self]
-
-    def set_allies(self, allies: List["Entity"]):
-        self._allies = [a for a in allies if a is not self]
-
-    def list_enemies(self) -> List["Entity"]:
-        return [e for e in self._enemies if e.is_alive()]
-
-    def pick_enemy_single(
-            self, rng: Optional[random.Random] = None
-    ) -> Optional["Entity"]:
-        pool = self.list_enemies()
-        if not pool:
-            return None
-        (rng or self._rng).shuffle(pool)
-        return pool[0]
-
-    def pick_ally_lowest_hp(self) -> Optional["Entity"]:
-        pool = [a for a in self._allies if a.is_alive()]
-        if not pool:
-            return None
-        return min(pool, key=lambda x: x.stats.HP / max(1, x.stats.MAX_HP))
-
-    # ===== 数值/伤害 =====
-    def try_crit(self) -> bool:
-        return self._rng.random() < self.stats.CRIT
-
-    def cal_damage(self, amount: int) -> int:
-        # TODO 后续修改防御力计算公式
-        dmg = max(0, amount - int(self._base.get("DEF", 0) * 0.2))
-        return dmg
-
     # ===== 临时加成 & Buff =====
-    def add_stat_pct(self, stat: str, value: float):
-        key = stat.upper()
-        self._temp_pct[key] = self._temp_pct.get(key, 0.0) + float(value)
+    def add_buff(self, buff: Buff, source: str, stacks: int):
+        buff.source_id = source
+        buff.current_stack = min(buff.max_stack, stacks)
 
-    def add_buff(self, buff_id: str, stacks: int, source):
-        ex = next((b for b in self.buffs if b.buff_id == buff_id), None)
-        if ex:
-            ex.stacks += int(stacks)
-        else:
-            self.buffs.append(
-                BuffState(buff_id, int(stacks), remaining_turns=1)
-            )  # 持续由引擎覆盖
+        for existing_buff in self.buffs:
+            if existing_buff.id != buff.id:
+                continue
+
+            # 找到相同ID的buff，根据堆叠类型处理
+            if existing_buff.stack_type == BuffStackType.DURATION:
+                existing_buff.duration += buff.duration
+            elif existing_buff.stack_type == BuffStackType.INTENSITY:
+                existing_buff.current_stack = min(
+                    existing_buff.max_stack,
+                    existing_buff.current_stack + buff.current_stack
+                )
+            elif existing_buff.stack_type == BuffStackType.BOTH:
+                existing_buff.duration += buff.duration
+                existing_buff.current_stack = min(
+                    existing_buff.max_stack,
+                    existing_buff.current_stack + buff.current_stack
+                )
+            return existing_buff.current_stack # 无论哪种类型，处理完都返回
+
+        # 如果没有找到相同ID的buff，则添加新buff
+        self.buffs.append(buff)
+        return buff.current_stack
 
     def remove_buff(self, buff_id: str, reason: str = ""):
-        self.buffs = [b for b in self.buffs if b.buff_id != buff_id]
+        pass
 
     def dispel(self, count: int = 1, positive: bool = True):
-        if count > 0:
-            del self.buffs[: min(count, len(self.buffs))]
+        pass
 
     # ===== 生命周期 =====
     def is_alive(self) -> bool:
         return self.HP > 0
-
-    @property
-    def stats(self) -> StatsView:
-        def ap(base, key):
-            return int(round(base * (1.0 + self._temp_pct.get(key, 0.0) / 100.0)))
-
-        ATK = ap(self._base["ATK"], "ATK")
-        DEF = ap(self._base["DEF"], "DEF")
-        AGI = ap(self._base["AGI"], "AGI")
-        INT = ap(self._base["INT"], "INT")
-        return StatsView(
-            ATK=ATK,
-            DEF=DEF,
-            AGI=AGI,
-            INT=INT,
-            CRIT=min(1.0, max(0.0, self._base["CRIT"])),
-            HP=self._hp,
-            MAX_HP=self._base["MAX_HP"],
-        )

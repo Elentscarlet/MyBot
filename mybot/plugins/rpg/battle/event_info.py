@@ -5,7 +5,7 @@ from typing import Dict, Optional
 
 
 class EventInfo:
-    def __init__(self, source, target, round_num=0, is_crit=False, can_reflect=True, can_reduce=True,can_dodge =True, count_dict=None):
+    def __init__(self, source, target, round_num=0, is_crit=False, can_reflect=True, can_reduce=True,can_dodge =False, count_dict=None):
         # 行为发起者
         self.source = source
         # 行为目标
@@ -22,8 +22,10 @@ class EventInfo:
         self.op = None
         # 所用的技能
         self.skill = None
-        # 是否可以暴击
+        # 是否暴击
         self.is_crit = is_crit
+        # 是否被闪避
+        self.is_dodged = False
         # 暂时无用 伤害类型
         self.damage_type = 'physical'
         # 是否可以反弹
@@ -35,6 +37,8 @@ class EventInfo:
         self.count_dict = count_dict if count_dict is not None else {}
         # 该事件下的子事件
         self.sub_event = []
+
+        self.additional_msg =""
 
         # 事件关系追踪字段
         self.event_id = str(uuid.uuid4())

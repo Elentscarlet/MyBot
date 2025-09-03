@@ -3,10 +3,9 @@ from typing import Dict
 from .entity import Entity
 
 BASE_STATS = {
-    "ATK": 5,
-    "DEF": 3,
-    "AGI": 3,
-    "INT": 3,
+    "ATK": 2,
+    "DEF": 1,
+    "AGI": 1,
     "HP": 2,  # 基础HP点数
     "CRIT": 0.05,  # 基础暴击率
 }
@@ -16,7 +15,6 @@ WEAPON_SCORE_COEF = {
     "ATK": 0.7,
     "DEF": 0.4,
     "AGI": 0.3,
-    "INT": 0.2,
     "HP": 0.5,  # 每分score加多少点HP
     "CRIT": 0.01,  # 每分score加多少暴击率
 }
