@@ -170,8 +170,17 @@ async def choose_expedition(event: MessageEvent, match=wildChoose_m):
 
         monsters_data = _load_monsters()
         # 首先筛选出所有等级为1的怪物
-        selected_monsters = [monster for monster in monsters_data if
-                             monster['level'] <= 1 + int(round / 3) and monster['tag'] == 'monster']
+
+        round_threshold = int(round / 3)
+        min_level = min(5, round_threshold - 1)
+        max_level = 1 + round_threshold
+
+        selected_monsters = [
+            monster for monster in monsters_data
+            if min_level <= monster['level'] <= max_level
+               and monster['tag'] == 'monster'
+        ]
+
         # 随机选择3个怪物
         selected_monsters = random.sample(selected_monsters, 3)
         # 存储选择状态

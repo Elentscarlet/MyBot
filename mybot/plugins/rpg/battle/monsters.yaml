@@ -89,13 +89,13 @@
   AGI: 10
   INT: 5
   MAX_HP: 800
-  CRIT: 0.15
+  CRIT: 0.05
 - id: 沼泽鳄鱼
   name: 沼泽鳄鱼
   level: 2
   tag: monster
-  ATK: 4
-  DEF: 12
+  ATK: 5
+  DEF: 20
   AGI: 4
   INT: 0
   MAX_HP: 200
@@ -104,9 +104,9 @@
   name: 食人花
   level: 2
   tag: monster
-  ATK: 3
-  DEF: 6
-  AGI: 3
+  ATK: 5
+  DEF: 10
+  AGI: 5
   INT: 8
   MAX_HP: 300
   CRIT: 0.1
@@ -114,12 +114,12 @@
   name: 半人马猎手
   level: 2
   tag: monster
-  ATK: 4
-  DEF: 9
-  AGI: 8
+  ATK: 5
+  DEF: 10
+  AGI: 15
   INT: 2
   MAX_HP: 350
-  CRIT: 0.11
+  CRIT: 0.12
 
 - id: 暗影刺客
   name: 暗影刺客
@@ -127,20 +127,20 @@
   tag: monster
   ATK: 15
   DEF: 6
-  AGI: 16
+  AGI: 25
   INT: 8
-  MAX_HP: 380
-  CRIT: 0.18
+  MAX_HP: 150
+  CRIT: 0.35
 - id: 冰霜法师
   name: 冰霜法师
   level: 3
   tag: monster
-  ATK: 12
+  ATK: 20
   DEF: 10
   AGI: 8
   INT: 25
   MAX_HP: 350
-  CRIT: 0.1
+  CRIT: 0.01
 - id: 地狱三头犬
   name: 地狱三头犬
   level: 3
@@ -150,7 +150,7 @@
   AGI: 14
   INT: 12
   MAX_HP: 7000
-  CRIT: 0.2
+  CRIT: 0.13
 - id: 岩石巨人
   name: 岩石巨人
   level: 3
@@ -165,9 +165,9 @@
   name: 火焰元素
   level: 3
   tag: monster
-  ATK: 5
-  DEF: 8
-  AGI: 7
+  ATK: 15
+  DEF: 0
+  AGI: 10
   INT: 20
   MAX_HP: 320
   CRIT: 0.12
@@ -175,12 +175,12 @@
   name: 鹰身女妖
   level: 3
   tag: monster
-  ATK: 4
+  ATK: 18
   DEF: 7
-  AGI: 18
+  AGI: 15
   INT: 10
-  MAX_HP: 300
-  CRIT: 0.15
+  MAX_HP: 250
+  CRIT: 0.25
 
 - id: 龙裔战士
   name: 龙裔战士
@@ -188,25 +188,25 @@
   tag: monster
   ATK: 70
   DEF: 22
-  AGI: 9
+  AGI: 5
   INT: 6
-  MAX_HP: 550
+  MAX_HP: 650
   CRIT: 0.12
 - id: 虚空行者
   name: 虚空行者
   level: 4
   tag: monster
-  ATK: 58
+  ATK: 55
   DEF: 8
-  AGI: 18
+  AGI: 30
   INT: 30
   MAX_HP: 420
-  CRIT: 0.15
+  CRIT: 0.25
 - id: 远古巨龙
   name: 远古巨龙
   level: 4
   tag: boss
-  ATK: 110
+  ATK: 150
   DEF: 25
   AGI: 16
   INT: 20
@@ -216,9 +216,9 @@
   name: 雷霆巨鹰
   level: 4
   tag: monster
-  ATK: 65
-  DEF: 12
-  AGI: 22
+  ATK: 50
+  DEF: 20
+  AGI: 20
   INT: 15
   MAX_HP: 480
   CRIT: 0.18
@@ -226,30 +226,30 @@
   name: 暗影巫师
   level: 4
   tag: monster
-  ATK: 52
-  DEF: 10
-  AGI: 14
+  ATK: 80
+  DEF: 5
+  AGI: 5
   INT: 35
   MAX_HP: 400
-  CRIT: 0.14
+  CRIT: 0.01
 - id: 熔岩巨兽
   name: 熔岩巨兽
   level: 4
   tag: monster
-  ATK: 78
-  DEF: 28
-  AGI: 6
-  INT: 8
-  MAX_HP: 650
-  CRIT: 0.1
+  ATK: 75
+  DEF: 50
+  AGI: 0
+  INT: 0
+  MAX_HP: 60
+  CRIT: 0.01
 
 - id: 深渊恶魔
   name: 深渊恶魔
   level: 5
   tag: monster
-  ATK: 85
-  DEF: 18
-  AGI: 14
+  ATK: 88
+  DEF: 20
+  AGI: 20
   INT: 35
   MAX_HP: 650
   CRIT: 0.2
@@ -257,9 +257,9 @@
   name: 圣殿骑士
   level: 5
   tag: monster
-  ATK: 78
-  DEF: 30
-  AGI: 11
+  ATK: 65
+  DEF: 65
+  AGI: 15
   INT: 15
   MAX_HP: 800
   CRIT: 0.16
@@ -268,7 +268,7 @@
   level: 5
   tag: boss
   ATK: 140
-  DEF: 35
+  DEF: 70
   AGI: 20
   INT: 40
   MAX_HP: 20000
@@ -277,29 +277,29 @@
   name: 天界使徒
   level: 5
   tag: monster
-  ATK: 92
-  DEF: 25
-  AGI: 16
+  ATK: 90
+  DEF: 20
+  AGI: 50
   INT: 28
   MAX_HP: 720
-  CRIT: 0.22
+  CRIT: 0.30
 - id: 虚空吞噬者
   name: 虚空吞噬者
   level: 5
   tag: monster
   ATK: 88
-  DEF: 20
+  DEF: 42
   AGI: 13
-  INT: 45
-  MAX_HP: 680
-  CRIT: 0.18
+  INT: 42
+  MAX_HP: 1000
+  CRIT: 0.42
 - id: 永恒守护者
   name: 永恒守护者
   level: 5
   tag: monster
   ATK: 82
   DEF: 32
-  AGI: 9
+  AGI: 1
   INT: 22
-  MAX_HP: 850
+  MAX_HP: 777
   CRIT: 0.15

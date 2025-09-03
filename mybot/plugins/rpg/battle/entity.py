@@ -204,8 +204,8 @@ class Entity:
         return actual_damage
 
     def check_dodged(self) -> bool:
-        min_dodge = 0.05  # 5% minimum chance
-        max_dodge = 0.95  # 95% maximum chance
+        min_dodge = 0.01  # 1% minimum chance
+        max_dodge = 0.99  # 99% maximum chance
 
         prop = self.AGI / (self.AGI + 30)
         prop = max(min_dodge, min(max_dodge, prop))  # Clamp between min and max
