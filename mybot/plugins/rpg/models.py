@@ -1,11 +1,13 @@
 # mybot/plugins/rpg/models.py
 from __future__ import annotations
 
+import pathlib
 import random
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
 import numpy as np
+import yaml
 
 from .storage import today_tag, load_players, save_players, load_boss_map, save_boss_map
 from .util.config_loader import ConfigLoader
@@ -25,6 +27,12 @@ def slots_rank(slots: List[int]) -> str:
 
 def refine_cost(next_val: int) -> int:
     return {2: 100, 3: 300, 4: 900}.get(next_val, 999999)
+
+# === 工具：加载怪物定义 ===
+def _load_monsters() -> Dict:
+    path = pathlib.Path(__file__).resolve().parent / "battle" / "monsters.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or []
+    return data
 
 
 @dataclass
@@ -301,34 +309,32 @@ class Player:
 class Boss:
     gid: str
     boss_date: str
-    name: str = "远古巨像"
-    hp: int = 3000
-    hp_max: int = 3000
-    atk: int = 50
-    def_: int = 15
-    spd: int = 10
-    crit: int = 10
+    name: str
+    hp: int
+    hp_max: int
     board: Dict[str, int] = field(default_factory=dict)
     killed: bool = False
 
     @staticmethod
     def today(gid: str) -> "Boss":
-        return Boss(gid=gid, boss_date=today_tag())
+        # 加载怪物数据
+        monsters_data = _load_monsters()
+        # 首先筛选出所有等级为1的怪物
+        selected_monsters = [monster for monster in monsters_data if monster['tag'] == 'boss']
+        boss = random.choice(selected_monsters)
+        print(boss)
+        return Boss(gid=gid, boss_date=today_tag(), name=boss['name'], hp=boss['MAX_HP'], hp_max=boss['MAX_HP'])
 
     @staticmethod
     def from_dict(d: Dict) -> "Boss":
         b = Boss(
             gid=d["gid"],
             boss_date=d.get("boss_date", today_tag()),
-            name=d.get("name", "远古巨像"),
-            hp=d.get("hp", 3000),
-            hp_max=d.get("hp_max", 3000),
-            atk=d.get("atk", 50),
-            def_=d.get("def", d.get("def_", 15)),
-            spd=d.get("spd", 10),
-            crit=d.get("crit", 10),
+            name=d.get("name"),
+            hp=d.get("hp", 10000),
+            hp_max=d.get("hp_max", 10000),
             board=d.get("board", {}),
-            killed=d.get("killed", False),
+            killed=d.get("killed", False)
         )
         if b.boss_date != today_tag():
             b = Boss.today(b.gid)
@@ -341,12 +347,8 @@ class Boss:
             "name": self.name,
             "hp": self.hp,
             "hp_max": self.hp_max,
-            "atk": self.atk,
-            "def": self.def_,
-            "spd": self.spd,
-            "crit": self.crit,
             "board": self.board,
-            "killed": self.killed,
+            "killed": self.killed
         }
 
 

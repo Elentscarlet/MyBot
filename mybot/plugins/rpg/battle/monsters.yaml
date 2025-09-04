@@ -24,10 +24,10 @@
   level: 1
   tag: boss
   ATK: 50
-  DEF: 0
-  AGI: 8
+  DEF: 20
+  AGI: 10
   INT: 0
-  MAX_HP: 3000
+  MAX_HP: 5000
   CRIT: 0.1
 - id: 野狼
   name: 野狼
@@ -84,12 +84,12 @@
   name: 石像鬼领主
   level: 2
   tag: boss
-  ATK: 50
-  DEF: 20
-  AGI: 10
+  ATK: 80
+  DEF: 10
+  AGI: 15
   INT: 5
-  MAX_HP: 800
-  CRIT: 0.05
+  MAX_HP: 8000
+  CRIT: 0.15
 - id: 沼泽鳄鱼
   name: 沼泽鳄鱼
   level: 2
@@ -147,7 +147,7 @@
   tag: boss
   ATK: 85
   DEF: 15
-  AGI: 14
+  AGI: 25
   INT: 12
   MAX_HP: 7000
   CRIT: 0.13

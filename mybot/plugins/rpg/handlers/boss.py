@@ -9,12 +9,6 @@ from ..logic_battle import simulate_duel_with_skills
 from ..models import get_boss, put_boss, get_player, put_player, get_players_by_gid, put_players
 from ..utils import ids_of
 
-# 技能装配：优先使用“配表技能”，若未启用则回退到内置
-try:
-    from ..skill_config import equip_skills_for_player_from_cfg as equip_skills_for_player  # type: ignore
-except Exception:
-    from ..logic_skill import equip_skills_for_player  # 旧版内置
-
 boss_info_m = on_fullmatch(("boss", "BOSS", "世界boss", "世界BOSS"))
 boss_hit_m = on_fullmatch(("出刀", "打boss", "攻打boss"))
 
@@ -55,6 +49,7 @@ async def _(event: MessageEvent):
     if b.killed or b.hp <= 0:
         await boss_hit_m.finish("今日BOSS已击杀")
     before = b.hp
+    print(b)
 
     # 直接用 boss 名称作为怪物ID，要求 monsters.yaml 里有同名boss定义
     result, logs, boss_left_hp = simulate_duel_with_skills(p, b.name, b.hp)

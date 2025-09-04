@@ -36,7 +36,6 @@ def derive_internal_stats(player) -> Dict[str, int]:
 def _load_monster_def(monster_id: str) -> Dict:
     path = pathlib.Path(__file__).resolve().parent / "battle" / "monsters.yaml"
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or []
-    print(data)
     for m in data:
         if str(m.get("id")) == str(monster_id):
             return m
