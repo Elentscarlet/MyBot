@@ -199,7 +199,7 @@ class ConfigSkill:
             return False
 
         reduction_formula = effect.get('formula', '0')
-        reduction = int(max(self.evaluator.evaluate(reduction_formula, context) or 0), 0)
+        reduction = int(max(self.evaluator.evaluate(reduction_formula, context), 0) or 0)
 
         reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
                                     can_reflect=False, can_dodge=False)
