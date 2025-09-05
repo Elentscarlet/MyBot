@@ -200,8 +200,8 @@
     - event_type: "damage_calc"
       is_attacker: true
       conditions:
-        - expr: "damage > 0 and op_type == 'damage'"
-        - expr: "random() < 0.15 + skill.level * 0.05"  # 15%基础几率，每级提升5%
+        - expr: "damage > 0 and op_type == 'damage' and is_dodged == False "
+        - expr: "random() < 0.10 + skill.level * 0.05"  # 10%基础几率，每级提升5%
   effects:
     - op: "add_damage"
       formula: "target.MAX_HP * skill.level/10"

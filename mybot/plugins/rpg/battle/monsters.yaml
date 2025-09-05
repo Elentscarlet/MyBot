@@ -240,7 +240,7 @@
   DEF: 50
   AGI: 0
   INT: 0
-  MAX_HP: 60
+  MAX_HP: 600
   CRIT: 0.01
 
 - id: 深渊恶魔
