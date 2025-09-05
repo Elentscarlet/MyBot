@@ -204,7 +204,7 @@
         - expr: "random() < 0.10 + skill.level * 0.05"  # 10%基础几率，每级提升5%
   effects:
     - op: "add_damage"
-      formula: "target.MAX_HP * skill.level/10"
+      formula: "min(50 * skill.level , target.MAX_HP * skill.level/10)"
       damage_type: "lightning"
 
 - id: full_power

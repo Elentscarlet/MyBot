@@ -226,7 +226,7 @@ class Entity:
         if not self.is_alive and not can_apply_on_death:
             return 0
 
-        actual_heal = min(amount, self.MAX_HP - self.HP)
+        actual_heal = int(min(amount, self.MAX_HP - self.HP))
         self.HP += actual_heal
         if self.HP > 0:
             self.is_alive = True
