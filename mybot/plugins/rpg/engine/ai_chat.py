@@ -10,7 +10,6 @@ load_dotenv()
 
 def call_siliconflow_api(messages):
     API_KEY = os.getenv("API_KEY")
-    print(API_KEY)
     """调用硅基流动API"""
     headers = {
         "Authorization": f"Bearer {API_KEY}",
@@ -84,9 +83,7 @@ def get_chat_response(messages):
     # 保存玩家选择
     messages = format_conversation_history(conversation_history)
     response = call_siliconflow_api(messages)
-    print(response)
     # 解析API响应
     assistant_reply = response['choices'][0]['message']['content']
-    print(assistant_reply)
     return assistant_reply
 
