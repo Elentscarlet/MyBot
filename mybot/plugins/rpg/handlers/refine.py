@@ -3,12 +3,25 @@ import random
 import re
 
 from nonebot.adapters.onebot.v11 import MessageEvent
-from nonebot.plugin.on import on_fullmatch, on_startswith
+from nonebot.plugin.on import on_fullmatch, on_startswith, on_keyword
 
 from ..models import get_player, put_player
 from ..utils import ids_of
 
-# 新增精炼数字指令
+weapon_upgrade = on_fullmatch("升级武器")
+
+
+@weapon_upgrade.handle()
+async def _(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+    res, msg, offset = p.weapon.upgrade()
+    if res:
+        p.dust += offset
+        put_player(p)
+    await weapon_upgrade.finish(msg)
+
+
 refine_num = on_startswith("精炼")
 
 

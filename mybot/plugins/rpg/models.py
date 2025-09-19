@@ -28,6 +28,7 @@ def slots_rank(slots: List[int]) -> str:
 def refine_cost(next_val: int) -> int:
     return {2: 100, 3: 300, 4: 900}.get(next_val, 999999)
 
+
 # === 工具：加载怪物定义 ===
 def _load_monsters() -> Dict:
     path = pathlib.Path(__file__).resolve().parent / "battle" / "monsters.yaml"
@@ -71,6 +72,7 @@ class Points:
 @dataclass
 class Weapon:
     name: str = "无名之刃"
+    level: int = 1
     slots: List[int] = field(default_factory=lambda: [1, 1, 1])  # C=1 B=2 A=3 S=4
 
     @property
@@ -105,12 +107,28 @@ class Weapon:
         else:
             return False, f"「精炼失败」！武器等级：{self.rank}｜评分{self.score}｜剩余粉尘{p.dust}✨|本次精炼消耗粉尘：{cost}✨", cost
 
+    #武器升级
+    def upgrade(self) -> tuple[bool, str, int]:
+        threshold = min(17 + self.level, 22)
+        if self.score < threshold:
+            msg = f"升级失败！{self.score}分还想升级？再练练吧~"
+            msg += f"\n 需要{threshold}分才能升级哦~"
+            return False, msg, 0
+        else:
+            offset = (self.score - 17 - self.level) * 5000
+            msg = f"✨ 武器升级！{self.level}→{self.level + 1}级！评分已刷新，技能槽+1，又可以装新技能啦！"
+            if offset > 0:
+                msg += f"\n评分高于{threshold}，还你{offset}尘✨，收好了哦！"
+            self.level += 1
+            self.slots = [1, 1, 1]
+            return True, msg, offset
+
     @staticmethod
     def from_dict(d: Dict) -> "Weapon":
-        return Weapon(d.get("name", "无名之刃"), list(d.get("slots", [1, 1, 1])))
+        return Weapon(d.get("name", "无名之刃"), d.get("level", 1), list(d.get("slots", [1, 1, 1])))
 
     def to_dict(self) -> Dict:
-        return {"name": self.name, "slots": self.slots}
+        return {"name": self.name, "level": self.level, "slots": self.slots}
 
     def cal_dust_consume(self):
         return 30
@@ -270,7 +288,7 @@ class Player:
 
         # 武器区域
         detail.append(f"╭─ 武器 ─{'─' * 7}")
-        detail.append(f"│ {self.weapon.name} {self.weapon.rank}级")
+        detail.append(f"│ {self.weapon.name} {self.weapon.rank} [{self.weapon.level}]阶")
         detail.append(f"│ 评分: {self.weapon.score}")
         detail.append(f"│ 技能: {get_equipped_skill_names(player=self)}")
 
@@ -387,8 +405,8 @@ def get_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tupl
     if skill_id in player.skills.keys():
         return False, f"玩家已经拥有技能[{skill_map.get(skill_id).get("name")}]"
 
-    # 如果技能槽未满（小于等于3个）
-    if len(player.skills) < 3:
+    # 如果技能槽未满
+    if len(player.skills) < 2 + player.weapon.level:
         player.skills.__setitem__(skill_id, 1)
         put_player(player)
         return True, f"技能[{skill_map.get(skill_id).get("name")}]获取成功"
@@ -430,8 +448,8 @@ def equip_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tu
     if skill_id in player.equipped_skills:
         return False, f"技能[{skill_map.get(skill_id).get("name")}]已经装配"
 
-    # 检查装备槽位限制（假设最多可以装备3个技能）
-    max_equipped = 1
+    # 检查装备槽位限制
+    max_equipped = player.weapon.level
     if len(player.equipped_skills) >= max_equipped:
         old_skill_id = player.equipped_skills.pop(0)
         player.equipped_skills.append(skill_id)
@@ -479,7 +497,7 @@ def get_equipped_skill_names(player: Player) -> str:
             equipped_skill_names.append(name + f"[{skill_level}]")
     if len(equipped_skill_names) == 0:
         return "无"
-    return ",".join(equipped_skill_names)
+    return " , ".join(equipped_skill_names)
 
 
 def put_players(players: List[Player]):

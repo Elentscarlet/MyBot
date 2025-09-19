@@ -37,6 +37,7 @@ async def _(event: MessageEvent):
 
     # 增加随机事件
     event_chance = random.randint(1, 100)
+    print(event_chance)
 
     # 15%几率触发特殊事件
     if event_chance <= 15:
@@ -125,10 +126,10 @@ async def _(event: MessageEvent):
     equipped_skills_info = ""
     for i, skill in enumerate(p.equipped_skills):
         print(f"{i}. {skill}")
-        equipped_skills_info = "\n".join([f"{i + 1}. {skills_map.get(skill).get("name")}"])
+        equipped_skills_info += f"{i + 1}. {skills_map.get(skill).get('name')}\n"
 
     reply_msg += f"\n【已装配技能】：\n{equipped_skills_info}\n"
-    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「1」个技能"
+    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「{p.weapon.level}」个技能"
     reply_msg += f"\n【指令】输入'技能+数字'装配技能（例如：技能1）"
     reply_msg += f"\n【指令】输入'升级技能+数字'升级技能（例如：升级技能1）"
     reply_msg += f"\n【指令】输入'遗忘技能+数字'遗忘技能（例如：遗忘技能1）"
@@ -202,7 +203,7 @@ async def _(event: MessageEvent):
 
 _equip_skill = on_regex(r"^技能([1-5])$")
 @_equip_skill.handle()
-async def choose_expedition(event: MessageEvent, match=_equip_skill):
+async def choose_expedition(event: MessageEvent):
     uid, gid, name = ids_of(event)
     p = get_player(uid, gid, name)
 
