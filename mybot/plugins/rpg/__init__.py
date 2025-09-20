@@ -18,3 +18,4 @@ from .handlers import redistribute  # noqa: F401
 from .handlers import rob
 from .handlers import skills
 from .handlers import ai_chat
+from .handlers import dice_simulator
