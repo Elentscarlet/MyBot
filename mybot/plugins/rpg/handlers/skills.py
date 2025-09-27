@@ -153,7 +153,7 @@ async def _(event: MessageEvent):
     msg = event.get_plaintext()
 
     # 使用正则匹配获取选择
-    match = re.match(r"^升级技能([1-3])$", msg)
+    match = re.match(r"^升级技能([1-9])$", msg)
     if not match:
         await _level_up_skill.finish("格式错误，请使用「升级技能1」、「升级技能2」或「升级技能3」")
 
@@ -173,7 +173,7 @@ async def _(event: MessageEvent):
     put_player(p)
     await _level_up_skill.finish(msg)
 
-_forget_skill = on_regex(r"^遗忘技能([1-5])$")
+_forget_skill = on_regex(r"^遗忘技能([1-9])$")
 @_forget_skill.handle()
 async def _(event: MessageEvent):
     uid, gid, name = ids_of(event)
@@ -185,7 +185,7 @@ async def _(event: MessageEvent):
     msg = event.get_plaintext()
 
     # 使用正则匹配获取选择
-    match = re.match(r"^遗忘技能([1-3])$", msg)
+    match = re.match(r"^遗忘技能([1-9])$", msg)
     if not match:
         await _forget_skill.finish("格式错误，请使用「遗忘技能1」、「遗忘技能2」或「遗忘技能3」")
 
@@ -201,7 +201,7 @@ async def _(event: MessageEvent):
     res, msg = forget_skill(p, skill_id, skills_map)
     await _forget_skill.finish(msg)
 
-_equip_skill = on_regex(r"^技能([1-5])$")
+_equip_skill = on_regex(r"^技能([1-9])$")
 @_equip_skill.handle()
 async def choose_expedition(event: MessageEvent):
     uid, gid, name = ids_of(event)
@@ -214,7 +214,7 @@ async def choose_expedition(event: MessageEvent):
     msg = event.get_plaintext()
 
     # 使用正则匹配获取选择
-    match = re.match(r"^技能([1-3])$", msg)
+    match = re.match(r"^技能([1-9])$", msg)
     if not match:
         await _equip_skill.finish("格式错误，请使用「技能1」、「技能2」或「技能3」")
 

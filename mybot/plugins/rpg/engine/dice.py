@@ -6,13 +6,9 @@ class DiceSimulator:
     def __init__(self):
         # 骰子面：0,0,1,1,2,2（其中一个2是特殊的）
         self.dice_faces = [0, 0, 1, 1, 2, 2]
-        # 特殊2的索引（假设最后一个2是特殊的）
-        self.special_2_index = 5
 
         # 卡牌分布（与骰子一致）
         self.card_types = [0, 0, 1, 1, 2, 2]
-        # 特殊卡牌的索引
-        self.special_card_index = 5
 
     def simulate_single_trial(self, n_dice, n_cards, target_x):
         """
