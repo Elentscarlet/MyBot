@@ -3,7 +3,7 @@ from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.plugin.on import on_message
 from nonebot.rule import to_me
 
-from mybot.plugins.rpg.engine.ai_chat import format_conversation_history, call_siliconflow_api, get_chat_response
+from mybot.plugins.rpg.engine.ai_chat import get_chat_response
 
 chat_m = on_message(rule=to_me(), priority=10, block=True)
 
