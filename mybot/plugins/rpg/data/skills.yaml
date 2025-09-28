@@ -28,14 +28,14 @@
   stop_propagation: false
   get_by_gacha: false
   target: enemy_single
-  description: "【基础技能】【力量>=8获取】力量打击：根据力量造成伤害，技能倍率1.8，可以暴击"
+  description: "【基础技能】【力量>=8获取】力量打击：根据力量造成伤害，技能倍率2.0，可以暴击"
   triggers:
     - event_type: "attack"
       is_attacker: true
       priority: 2
   effects:
     - op: "damage"
-      formula: "source.ATK * 1.8"
+      formula: "source.ATK * 2.0"
       damage_type: "physical"
       can_crit: true
       crit_multiplier: 1.5
@@ -234,7 +234,7 @@
   cd: 5
   level: 1
   get_by_gacha: true
-  description: "【武器技能】【忍耐】:在下回合开始时，造成已损失生命值1.2倍伤害(每级+0.2)，并回复一半的血量"
+  description: "【武器技能】【忍耐】:本回合不攻击，在下回合开始时，造成已损失生命值1.2倍伤害(每级+0.2)，并回复一半的血量"
   stop_propagation: true
   triggers:
     - event_type: "attack"

@@ -196,10 +196,10 @@ class Entity:
             return 0
 
         # 计算实际伤害（考虑防御等）
-        # 伤害减免率 = DEF / (DEF + 40) * 100%
+        # 伤害减免率 = DEF / (DEF + 35) * 100%
         actual_damage = 0
         if self.DEF >= 0:
-            damage_reduction = self.DEF / (self.DEF + 40)
+            damage_reduction = self.DEF / (self.DEF + 35)
         else:
             damage_reduction = self.DEF / 20
         for dmg_type, value in dmg_info.items():

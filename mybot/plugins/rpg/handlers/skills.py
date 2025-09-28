@@ -129,7 +129,7 @@ async def _(event: MessageEvent):
         equipped_skills_info += f"{i + 1}. {skills_map.get(skill).get('name')}\n"
 
     reply_msg += f"\n【已装配技能】：\n{equipped_skills_info}\n"
-    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「{p.weapon.level}」个技能"
+    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「{p.weapon.level}」个技能，目前可以记忆「{p.weapon.level+2}」个技能"
     reply_msg += f"\n【指令】输入'技能+数字'装配技能（例如：技能1）"
     reply_msg += f"\n【指令】输入'升级技能+数字'升级技能（例如：升级技能1）"
     reply_msg += f"\n【指令】输入'遗忘技能+数字'遗忘技能（例如：遗忘技能1）"

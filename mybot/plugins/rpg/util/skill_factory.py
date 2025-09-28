@@ -8,14 +8,14 @@ from ..engine.event_bus import EventBus
 
 def _cal_crit_damage(effect: Dict, context: Dict, dmg) -> float:
     source = context.get('source')
-    crit_stat = source.CRIT  # 暴击属性 (0~1)
+    crit_rate = source.CRIT  # 暴击属性 (0~1)
+    crit_dmg = 2 * source.CRIT  # 暴击属性 (0~1)
     # 暴击倍率，目前最大爆伤 = 最小爆伤+1
-    min_crit_multiplier = effect.get('crit_multiplier', 1.0)
-    max_crit_multiplier = effect.get('crit_multiplier', 1.0) + 1.0
-    if random.random() < crit_stat:
+    base_crit_multiplier = effect.get('crit_multiplier', 1.5)
+    total_crit_multiplier = base_crit_multiplier + crit_dmg
+    if random.random() < crit_rate:
         context["is_crit"] = True
-        crit_multiplier = min_crit_multiplier + source.CRIT * (max_crit_multiplier - min_crit_multiplier)
-        return dmg * crit_multiplier
+        return dmg * total_crit_multiplier
     context["is_crit"] = False
     return dmg
 
