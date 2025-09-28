@@ -220,7 +220,7 @@ async def end_wild(event: MessageEvent):
     put_player(p)
 
     del expedition_state[key]
-    await wildend_m.finish(f"结束远征，获得{reward}钻石")
+    await wildend_m.finish(f"结束远征，获得{reward}钻石💎")
 
 
 def calculate_reward(monster: Dict) -> int:

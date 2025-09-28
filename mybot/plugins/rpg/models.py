@@ -461,7 +461,22 @@ def equip_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tu
 
     put_player(player)
 
-    return True, f"技能[{skill_map.get(skill_id).get("name")}]装配成功"
+    return True, f"技能[{skill_map.get(skill_id).get("name")}]成功装配"
+
+def unequip_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:
+    # 初始化 equipped_skills 属性（如果不存在）
+    if not hasattr(player, 'equipped_skills'):
+        player.equipped_skills = []
+
+    # 检查技能是否已经卸下
+    if skill_id not in player.equipped_skills:
+        return False, f"技能[{skill_map.get(skill_id).get("name")}]未装配"
+
+    # 卸下技能
+    player.equipped_skills.remove(skill_id)
+    put_player(player)
+
+    return True, f"技能[{skill_map.get(skill_id).get("name")}]成功卸下"
 
 
 def level_up_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tuple[bool, str]:

@@ -6,7 +6,8 @@ from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.plugin.on import on_fullmatch, on_regex
 
 from mybot.plugins.rpg.handlers.wild import format_chinese
-from mybot.plugins.rpg.models import get_player, put_player, equip_skill, get_skill, level_up_skill, forget_skill
+from mybot.plugins.rpg.models import get_player, put_player, equip_skill, get_skill, level_up_skill, forget_skill, \
+    unequip_skill
 from mybot.plugins.rpg.util.config_loader import ConfigLoader
 from mybot.plugins.rpg.utils import ids_of
 
@@ -133,6 +134,7 @@ async def _(event: MessageEvent):
     reply_msg += f"\n【指令】输入'技能+数字'装配技能（例如：技能1）"
     reply_msg += f"\n【指令】输入'升级技能+数字'升级技能（例如：升级技能1）"
     reply_msg += f"\n【指令】输入'遗忘技能+数字'遗忘技能（例如：遗忘技能1）"
+    reply_msg += f"\n【指令】输入'卸载技能+数字'卸下技能（例如：卸载技能1）"
 
     await _show_skills.finish(reply_msg)
 
@@ -230,3 +232,34 @@ async def choose_expedition(event: MessageEvent):
 
     res, msg = equip_skill(p, skill_id, skills_map)
     await _equip_skill.finish(msg)
+
+_unequip_skill = on_regex(r"^卸载技能([1-9])$")
+@_unequip_skill.handle()
+async def choose_expedition(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+
+    config_loader = ConfigLoader()
+    skills_map = config_loader.get_skills_map(True)
+
+    # 获取消息文本
+    msg = event.get_plaintext()
+
+    # 使用正则匹配获取选择
+    match = re.match(r"^卸载技能([1-9])$", msg)
+    if not match:
+        await _unequip_skill.finish("格式错误，请使用「卸载技能」、「卸载技能」或「卸载技能」")
+
+    # 获取选择
+    choice = int(match.group(1)) - 1
+
+    # 检查选择是否有效
+    if choice < 0 or choice >= len(p.equipped_skills):
+        await _unequip_skill.finish("无效的技能选择")
+        return
+
+    # 获取技能ID
+    skill_id = p.equipped_skills[choice]
+
+    res, msg = unequip_skill(p, skill_id, skills_map)
+    await _unequip_skill.finish(msg)
