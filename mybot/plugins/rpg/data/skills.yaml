@@ -253,7 +253,7 @@
   cd: 0
   level: 1
   get_by_gacha: true
-  description: "【武器技能】【生生不息】:自己的回合开始时恢复(10+2%)*等级的生命"
+  description: "【武器技能】【生生不息】:自己的回合开始时恢复(6+2%)*等级的生命"
   stop_propagation: true
   triggers:
     - event_type: "round_start"
@@ -261,7 +261,7 @@
       priority: 3
   effects:
     - op: "heal"
-      formula: "10*skill.level + source.MAX_HP/50 * skill.level"
+      formula: "6*skill.level + source.MAX_HP/50 * skill.level"
       can_apply_on_death: false
       is_self_target: true
 
