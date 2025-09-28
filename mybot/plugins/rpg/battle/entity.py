@@ -17,6 +17,8 @@ class BuffStackType(Enum):
 class Buff:
     # buff唯一标识
     id: str
+    # 名称
+    name: str
     # 描述
     description: str
 
@@ -39,11 +41,13 @@ class Buff:
     changes_on_turn_end: Dict[str, int] = field(default_factory=dict)
 
     # 来源
-    source_id: str = None
+    source: str = None
 
     # 免疫和抵抗相关
     can_resist: bool = False  # 是否可被抵抗
     can_dispel: bool = True  # 是否可被驱散
+
+    effects: List[Dict[str, str]] = field(default_factory=list)
 
 
 def create_buff_from_dict(data: Dict[str, Any]) -> Buff:
@@ -53,16 +57,23 @@ def create_buff_from_dict(data: Dict[str, Any]) -> Buff:
     # 处理 effects 列表，转换为 property_change 字典
     if 'effects' in data:
         property_change = {}
+        remaining_effects = []
         for effect in data['effects']:
             if effect['op'] == 'property_change':
                 stat = effect['stat']
                 value = effect['value']
                 property_change[stat] = value
+            else:
+                remaining_effects.append(effect)
 
         # 将 property_change 添加到数据中
         data['property_change'] = property_change
-        # 移除 effects 字段，因为它不是 Buff 类的字段
-        del data['effects']
+        # 更新 effects，只保留非 property_change 的效果
+        if remaining_effects:
+            data['effects'] = remaining_effects
+        else:
+            # 如果没有剩余效果，移除 effects 字段
+            del data['effects']
 
     # 处理 stack_type 字符串转换为枚举
     if 'stack_type' in data and isinstance(data['stack_type'], str):
@@ -72,7 +83,7 @@ def create_buff_from_dict(data: Dict[str, Any]) -> Buff:
     if 'turn_end' in data:
         changes_list = data['turn_end']
         changes_dict = {}
-        for change_dict  in changes_list:
+        for change_dict in changes_list:
             changes_dict.update(change_dict)
         data['changes_on_turn_end'] = changes_dict
 
@@ -251,7 +262,7 @@ class Entity:
 
     # ===== 临时加成 & Buff =====
     def add_buff(self, buff: Buff, source: str, stacks: int):
-        buff.source_id = source
+        buff.source = source
         buff.current_stack = min(buff.max_stack, stacks)
 
         for existing_buff in self.buffs:
@@ -277,7 +288,7 @@ class Entity:
                     existing_buff.max_stack,
                     existing_buff.current_stack + buff.current_stack
                 )
-            return existing_buff.current_stack # 无论哪种类型，处理完都返回
+            return existing_buff.current_stack  # 无论哪种类型，处理完都返回
 
         # 如果没有找到相同ID的buff，则添加新buff
         self.buffs.append(buff)

@@ -6,27 +6,28 @@ from typing import List, Dict, Any
 from .event_bus import EventBus, BattleEvent
 from ..battle.entity import Entity
 from ..battle.event_info import EventInfo
+from ..util.buff_engine import apply_buff_effect
 from ..util.event_chain_tracker import EventChainTracker
 
 
 def build_log_msg(event: EventInfo):
     amount = event.last_amount if event.last_amount is not None else event.amount
     if event.op == "damage_reduction":
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [减免({amount})点伤害]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [减免({amount})点伤害]"
     elif event.op == 'reflect_damage':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [反射({amount})点伤害]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [反射({amount})点伤害]"
     elif event.op == 'damage':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [造成({amount})点伤害]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [造成({amount})点伤害]"
     elif event.op == 'add_damage':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [附加({amount})点伤害]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [附加({amount})点伤害]"
     elif event.op == 'leech':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [吸收({amount})点生命值]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [吸收({amount})点生命值]"
     elif event.op == 'heal':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [恢复({amount})点生命值]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [恢复({amount})点生命值]"
     elif event.op == 'apply_buff':
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [{event.additional_msg}]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [{event.additional_msg}]"
     else:
-        event_info = f"{event.source.name} [{event.skill.name}]-> {event.target.name} [({amount})]"
+        event_info = f"{event.source.name} [{event.skill_name}]-> {event.target.name} [({amount})]"
     if event.is_dodged:
         event_info += "[🌀闪避!!!]"
     elif event.is_crit:
@@ -192,6 +193,13 @@ class BattleSystem:
         return len(alive_units) <= 1
 
     def _handle_round_start(self, event_data: EventInfo) -> bool:
+        """"检测buff"""
+        for unit in self.units:
+            for buff in unit.buffs:
+                    apply_buff_effect(buff, event_data)
+
+
+
         """处理回合开始"""
         if self.report_mode != 2:
             self.battle_log.append(f"第 {event_data.round_num} 回合开始!")
@@ -255,7 +263,7 @@ class BattleSystem:
                 return ""
 
             # 显示事件信息
-            if event.skill:
+            if event.skill_name:
                 event_info = build_log_msg(event)
                 log.append(f"{prefix}{connector}{event_info}")
             else:

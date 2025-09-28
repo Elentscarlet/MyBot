@@ -21,7 +21,7 @@ class EventInfo:
         # 当前操作
         self.op = None
         # 所用的技能
-        self.skill = None
+        self.skill_name = None
         # 是否暴击
         self.is_crit = is_crit
         # 是否被闪避

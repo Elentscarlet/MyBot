@@ -6,6 +6,19 @@ from ..battle.entity import Buff, create_buff_from_dict
 from ..battle.event_info import EventInfo
 from ..engine.event_bus import EventBus
 
+def _cal_crit_damage(effect: Dict, context: Dict, dmg) -> float:
+    source = context.get('source')
+    crit_stat = source.CRIT  # 暴击属性 (0~1)
+    # 暴击倍率，目前最大爆伤 = 最小爆伤+1
+    min_crit_multiplier = effect.get('crit_multiplier', 1.0)
+    max_crit_multiplier = effect.get('crit_multiplier', 1.0) + 1.0
+    if random.random() < crit_stat:
+        context["is_crit"] = True
+        crit_multiplier = min_crit_multiplier + source.CRIT * (max_crit_multiplier - min_crit_multiplier)
+        return dmg * crit_multiplier
+    context["is_crit"] = False
+    return dmg
+
 
 class SkillFactory:
     def __init__(self, config_loader, event_bus: EventBus):
@@ -82,7 +95,7 @@ class ConfigSkill:
         """检查触发条件"""
         context = self._create_execution_context(event_data)
         # 自己不触发自己
-        if self == event_data.skill:
+        if self.name == event_data.skill_name:
             return False
         # 攻击者检查
         if self.owner.name == event_data.source.name:
@@ -180,10 +193,10 @@ class ConfigSkill:
 
         damage = int(self.evaluator.evaluate(formula, context) or 0)
         if effect.get('can_crit'):
-            damage = int(self._cal_crit_damage(effect, context, damage))
+            damage = int(_cal_crit_damage(effect, context, damage))
         target = context.get('target')
         damage_event = EventInfo(source=self.owner, target=target, round_num=effect.get('round_num'))
-        damage_event.skill = self
+        damage_event.skill_name = self.name
         damage_event.amount = damage
         damage_event.damage_type = damage_type
         damage_event.op = effect.get('op')
@@ -203,7 +216,7 @@ class ConfigSkill:
 
         reduction_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
                                     can_reflect=False, can_dodge=False)
-        reduction_event.skill = self
+        reduction_event.skill_name = self.name
         reduction_event.amount = reduction
         reduction_event.op = effect.get('op')
         reduction_event.can_reflect = False
@@ -218,7 +231,7 @@ class ConfigSkill:
         dmg = int(self.evaluator.evaluate(dmg_formula, context) or 0)
         dmg_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
                               can_reflect=False, can_dodge=False)
-        dmg_event.skill = self
+        dmg_event.skill_name = self.name
         dmg_event.amount = dmg
         dmg_event.op = effect.get('op')
         dmg_event.damage_type = effect.get('damage_type', 'physical')
@@ -240,7 +253,7 @@ class ConfigSkill:
         reflect_damage = int(self.evaluator.evaluate(reflect_formula, context) or 0)
         reflect_event = EventInfo(source=self.owner, target=reflect_target, round_num=event_data.round_num,
                                   can_reflect=False, can_dodge=False)
-        reflect_event.skill = self
+        reflect_event.skill_name = self.name
         reflect_event.amount = reflect_damage
         reflect_event.damage_type = reflect_type
         reflect_event.op = effect.get('op')
@@ -262,23 +275,10 @@ class ConfigSkill:
 
         leech_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
                                 can_reflect=False)
-        leech_event.skill = self
+        leech_event.skill_name = self.name
         leech_event.amount = leech_amount
         leech_event.op = effect.get('op')
         event_data.add_sub_event(leech_event)
-
-    def _cal_crit_damage(self, effect: Dict, context: Dict, dmg) -> float:
-        source = context.get('source')
-        crit_stat = source.CRIT  # 暴击属性 (0~1)
-        # 暴击倍率，目前最大爆伤 = 最小爆伤+1
-        min_crit_multiplier = effect.get('crit_multiplier', 1.0)
-        max_crit_multiplier = effect.get('crit_multiplier', 1.0) + 1.0
-        if random.random() < crit_stat:
-            context["is_crit"] = True
-            crit_multiplier = min_crit_multiplier + source.CRIT * (max_crit_multiplier - min_crit_multiplier)
-            return dmg * crit_multiplier
-        context["is_crit"] = False
-        return dmg
 
     def _execute_heal(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行治疗效果"""
@@ -294,7 +294,7 @@ class ConfigSkill:
 
         heal_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
                                can_reflect=False)
-        heal_event.skill = self
+        heal_event.skill_name = self.name
         heal_event.amount = heal_amount
         heal_event.last_amount = heal_amount
         heal_event.op = effect.get('op')
@@ -312,10 +312,10 @@ class ConfigSkill:
         else:
             target = event_data.target
 
-        stack = target.add_buff(buff, event_data.source.id, stacks)
+        stack = target.add_buff(buff, event_data.source, stacks)
 
         buff_event = EventInfo(source=self.owner, target=target,can_dodge=False,can_reflect=False,can_reduce=False)
-        buff_event.skill = self
+        buff_event.skill_name = self.name
         buff_event.op = effect.get('op')
         buff_event.additional_msg = buff.description + f"(累计{stack}层)"
         event_data.add_sub_event(buff_event)

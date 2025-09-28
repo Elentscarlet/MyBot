@@ -227,3 +227,69 @@
       stacks_formula: "5*skill.level"
       is_self_target: true
 
+- id: endure
+  name: 忍耐
+  type: active
+  cost: {mp: 0}
+  cd: 5
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【忍耐】:在下回合开始时，造成已损失生命值1.2倍伤害(每级+0.2)，并回复一半的血量"
+  stop_propagation: true
+  triggers:
+    - event_type: "attack"
+      is_attacker: true
+      priority: 3
+  effects:
+    - op: "apply_buff"
+      buff_id: "endure"
+      stacks_formula: "skill.level"
+      is_self_target: true
+
+- id: bloom
+  name: 生生不息
+  type: passive
+  cost: {mp: 0}
+  cd: 0
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【生生不息】:自己的回合开始时恢复(10+2%)*等级的生命"
+  stop_propagation: true
+  triggers:
+    - event_type: "round_start"
+      is_attacker: true
+      priority: 3
+  effects:
+    - op: "heal"
+      formula: "10*skill.level + source.MAX_HP/50 * skill.level"
+      can_apply_on_death: false
+
+- id: entrapment
+  name: 蛛网束缚
+  type: active
+  cost: {mp: 0}
+  cd: 5
+  level: 1
+  get_by_gacha: true
+  description: "【武器技能】【蛛网束缚】:造成少量持续伤害，并降低目标(3*等级)点敏捷"
+  stop_propagation: true
+  triggers:
+    - event_type: "attack"
+      is_attacker: true
+      priority: 3
+  effects:
+    - op: "damage"
+      formula: "source.ATK * 0.4"
+      damage_type: "physical"
+      can_crit: false
+      can_dodge: false
+    - op: "apply_buff"
+      buff_id: "slow"
+      stacks_formula: "skill.level*3"
+      is_self_target: false
+    - op: "apply_buff"
+      buff_id: "poison"
+      stacks_formula: "skill.level*3"
+      is_self_target: false
+
+

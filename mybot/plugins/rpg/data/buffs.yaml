@@ -40,3 +40,64 @@
     - op: property_change
       stat: "DEF"
       value: -5
+
+- id: endure
+  name: 忍耐
+  is_positive: true
+  can_dispel: false
+  can_resist: false
+  duration: 3
+  max_stack: 99
+  stack_type: "NONE"
+  description: "忍耐"
+  turn_end:
+    - duration: -1
+    - stack: 0
+  effects:
+    - op: "damage"
+      is_owner: true
+      formula: "(source.MAX_HP - source.HP)*(1 + current_stack*0.2)"
+      damage_type: "physical"
+      can_crit: false
+      can_dodge: false
+    - op: "heal"
+      is_owner: true
+      formula: "(source.MAX_HP - source.HP)*(1 + current_stack*0.2)/2"
+
+- id: slow
+  name: 缓慢
+  is_positive: false
+  can_dispel: true
+  can_resist: true
+  duration: 5
+  max_stack: 10
+  stack_type: "INTENSITY"
+  description: "降低目标敏捷1点"
+  turn_end:
+    - duration: -1
+    - stack: 0
+  effects:
+    - op: property_change
+      stat: "AGI"
+      value: -1
+
+- id: poison
+  name: 中毒
+  is_positive: false
+  can_dispel: true
+  can_resist: true
+  duration: 7
+  max_stack: 99
+  stack_type: "INTENSITY"
+  description: "造成中毒伤害"
+  turn_end:
+    - duration: -1
+    - stack: 0
+  effects:
+    - op: "damage"
+      is_owner: false
+      is_self_target: true
+      formula: "current_stack*10"
+      damage_type: "poison"
+      can_crit: false
+      can_dodge: false

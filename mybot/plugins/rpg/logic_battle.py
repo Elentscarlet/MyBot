@@ -49,7 +49,7 @@ def simulate_duel_with_skills(
         boss_hp: int | None = None,
         max_turns: int = 10,
         seed: int | None = None,
-) -> Tuple[str, List[str],int]:
+) -> Tuple[str, List[str], int]:
     """
     事件驱动技能战斗（最小复现）：
     - 100% 走 YAML（skills/buffs/equip）
@@ -71,7 +71,7 @@ def simulate_duel_with_skills(
     m_ent.engine = eng
 
     # 2) 配发技能
-    equip_skills_for_player(player, p_ent,skill_factory)
+    equip_skills_for_player(player, p_ent, skill_factory)
 
     # 怪物最少也能普攻；若你有更复杂AI与技能表，在此接入
     m_basic = eng.build_skill_from_id("basic_attack")
@@ -86,7 +86,7 @@ def simulate_duel_with_skills(
 
     # 开始战斗
     battle_system.start_battle(p_ent, m_ent, max_turns)
-    return battle_system.winner, battle_system.battle_log , m_ent.HP
+    return battle_system.winner, battle_system.battle_log, int(m_ent.HP)
 
 
 def simulate_pvp_with_skills(
@@ -102,12 +102,14 @@ def simulate_pvp_with_skills(
     ent_a.engine = eng
     ent_b.engine = eng
 
-    equip_skills_for_player(player_a, ent_a,skill_factory)
-    equip_skills_for_player(player_b, ent_b,skill_factory)
+    equip_skills_for_player(player_a, ent_a, skill_factory)
+    equip_skills_for_player(player_b, ent_b, skill_factory)
 
     # #测试
-    # skill = skill_factory.create_skill("full_power", ent_a)
-    # ent_a.skills.append(skill)
+    skill = skill_factory.create_skill("entrapment", ent_a)
+    ent_a.skills.append(skill)
+    skill = skill_factory.create_skill("bloom", ent_a)
+    ent_a.skills.append(skill)
     # skill = skill_factory.create_skill("thorns", ent_b)
     # ent_b.skills.append(skill)
 
@@ -117,8 +119,8 @@ def simulate_pvp_with_skills(
     battle_system.report_mode = player_a.config.battle_report_model
 
     # 开始战斗
-    battle_system.start_battle(ent_a,ent_b,max_turns)
-    return battle_system.winner,battle_system.battle_log
+    battle_system.start_battle(ent_a, ent_b, max_turns)
+    return battle_system.winner, battle_system.battle_log
 
 
 # ===== 冷却与择技（最小实现） =====
@@ -144,6 +146,3 @@ def _set_cd_after_cast(ent, sid: str, eng: SkillEngine):
     for k in list(ent.cds.keys()):
         if k != sid and ent.cds[k] > 0:
             ent.cds[k] -= 1
-
-
-
