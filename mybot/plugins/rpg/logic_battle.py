@@ -106,10 +106,10 @@ def simulate_pvp_with_skills(
     equip_skills_for_player(player_b, ent_b, skill_factory)
 
     # #测试
-    skill = skill_factory.create_skill("entrapment", ent_a)
-    ent_a.skills.append(skill)
-    skill = skill_factory.create_skill("bloom", ent_a)
-    ent_a.skills.append(skill)
+    # skill = skill_factory.create_skill("entrapment", ent_a)
+    # ent_a.skills.append(skill)
+    # skill = skill_factory.create_skill("bloom", ent_a)
+    # ent_a.skills.append(skill)
     # skill = skill_factory.create_skill("thorns", ent_b)
     # ent_b.skills.append(skill)
 
