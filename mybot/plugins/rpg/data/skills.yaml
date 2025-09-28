@@ -263,6 +263,7 @@
     - op: "heal"
       formula: "10*skill.level + source.MAX_HP/50 * skill.level"
       can_apply_on_death: false
+      is_self_target: true
 
 - id: entrapment
   name: 蛛网束缚

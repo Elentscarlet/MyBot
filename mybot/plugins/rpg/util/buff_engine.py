@@ -68,17 +68,14 @@ def _execute_heal(effect: Dict, context: Dict, event_data: EventInfo):
 
     """执行造成伤害效果"""
     formula = effect.get('formula', '0')
-    damage_type = effect.get('damage_type', 'physical')
     evaluator = ExpressionEvaluator()
     heal = int(evaluator.evaluate(formula, context) or 0)
     source = context.get('source')
     source.heal(heal, False)
-    damage_event = EventInfo(source=source, target=source, round_num=effect.get('round_num'))
-    damage_event.amount = heal
-    damage_event.skill_name = context.get('buff')
-    damage_event.damage_type = damage_type
-    damage_event.op = effect.get('op')
-    damage_event.can_dodge = effect.get('can_dodge', False)
-    damage_event.is_crit = context.get('is_crit', False)
+    heal_event = EventInfo(source=source, target=source, round_num=effect.get('round_num'))
+    heal_event.amount = heal
+    heal_event.skill_name = context.get('buff')
+    heal_event.op = effect.get('op')
+    print(heal_event)
 
-    event_data.add_sub_event(damage_event)
+    event_data.add_sub_event(heal_event)

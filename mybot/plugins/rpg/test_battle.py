@@ -15,7 +15,7 @@ def main():
     p2 = Player(uid="2", gid="1", name="B")
     # 给玩家分配基础属性和武器
     p1.points.str = 7
-    p1.points.hp = 1
+    p1.points.hp = 8
     p1.points.def_ = 0
     p1.points.agi = 4
     p1.points.crit = 7
@@ -28,7 +28,7 @@ def main():
     p2.points.crit = 0
     p2.weapon = Weapon(name="测试斧", slots=[1, 1, 1])
 
-    result, logs = simulate_pvp_with_skills(p1, p2,99,0)
+    result, logs = simulate_pvp_with_skills(p1, p2,3,0)
     print("\n".join(logs))
 
 

@@ -283,19 +283,23 @@ class ConfigSkill:
     def _execute_heal(self, effect: Dict, context: Dict, event_data: EventInfo):
         """执行治疗效果"""
         formula = effect.get('formula', '0')
-        target_ref = effect.get('target', 'target')
         can_apply_on_death = effect.get('can_apply_on_death', False)
 
         heal_amount = int(self.evaluator.evaluate(formula, context) or 0)
-        target = context.get(target_ref)
+        is_self_target = effect.get('is_self_target', False)
+        if is_self_target:
+            target = event_data.source
+        else:
+            target = event_data.target
 
         if target and heal_amount > 0:
             target.heal(heal_amount, can_apply_on_death)
 
-        heal_event = EventInfo(source=self.owner, target=event_data.target, round_num=event_data.round_num,
+        heal_event = EventInfo(source=self.owner, target=target, round_num=event_data.round_num,
                                can_reflect=False)
         heal_event.skill_name = self.name
         heal_event.amount = heal_amount
+        heal_event.damage_type = None
         heal_event.last_amount = heal_amount
         heal_event.op = effect.get('op')
         event_data.add_sub_event(heal_event)
