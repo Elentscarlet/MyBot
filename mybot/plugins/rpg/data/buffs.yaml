@@ -97,7 +97,7 @@
     - op: "damage"
       is_owner: false
       is_self_target: true
-      formula: "current_stack*10"
+      formula: "current_stack*8"
       damage_type: "poison"
       can_crit: false
       can_dodge: false

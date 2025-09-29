@@ -290,7 +290,7 @@
       is_self_target: false
     - op: "apply_buff"
       buff_id: "poison"
-      stacks_formula: "skill.level*3"
+      stacks_formula: "skill.level"
       is_self_target: false
 
 
