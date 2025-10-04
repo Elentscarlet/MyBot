@@ -12,6 +12,7 @@
   triggers:
     - event_type: "attack"
       is_attacker: true
+      is_defender: false
       priority: 0
   effects:
     - op: "damage"
@@ -32,6 +33,7 @@
   triggers:
     - event_type: "attack"
       is_attacker: true
+      is_defender: false
       priority: 2
   effects:
     - op: "damage"
@@ -52,6 +54,7 @@
   triggers:
     - event_type: "attack"
       is_attacker: true
+      is_defender: false
       priority: 2
   effects:
     - op: "damage"
@@ -118,6 +121,7 @@
   triggers:
     - event_type: "damage_calc"
       is_attacker: true
+      is_defender: false
       conditions:
         - expr: "damage >0 and damage_type == 'physical' and is_crit == True and is_dodged == False"
       priority: 2
@@ -164,6 +168,7 @@
   triggers:
     - event_type: "damage_calc"
       is_attacker: true
+      is_defender: false
       conditions:
         - expr: "damage > 0 and op_type == 'damage' and is_dodged == False "
   effects:

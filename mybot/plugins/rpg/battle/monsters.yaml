@@ -27,7 +27,7 @@
   DEF: 20
   AGI: 10
   INT: 0
-  MAX_HP: 50000
+  MAX_HP: 18000
   CRIT: 0.1
 - id: 野狼
   name: 野狼
@@ -88,7 +88,7 @@
   DEF: 10
   AGI: 15
   INT: 5
-  MAX_HP: 80000
+  MAX_HP: 25000
   CRIT: 0.15
 - id: 沼泽鳄鱼
   name: 沼泽鳄鱼
@@ -149,7 +149,7 @@
   DEF: 15
   AGI: 25
   INT: 12
-  MAX_HP: 70000
+  MAX_HP: 35000
   CRIT: 0.13
 - id: 岩石巨人
   name: 岩石巨人
@@ -210,7 +210,7 @@
   DEF: 25
   AGI: 16
   INT: 20
-  MAX_HP: 62000
+  MAX_HP: 42000
   CRIT: 0.22
 - id: 雷霆巨鹰
   name: 雷霆巨鹰
@@ -271,7 +271,7 @@
   DEF: 70
   AGI: 20
   INT: 40
-  MAX_HP: 200000
+  MAX_HP: 50000
   CRIT: 0.3
 - id: 天界使徒
   name: 天界使徒
