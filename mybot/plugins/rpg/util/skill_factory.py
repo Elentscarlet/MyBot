@@ -81,7 +81,7 @@ class ConfigSkill:
 
             # 检查条件
             conditions = trigger_config.get('conditions', [])
-            if not self._check_conditions(conditions, event_data, trigger_config.get("is_attacker")):
+            if not self._check_conditions(conditions, event_data, trigger_config.get("is_attacker"), trigger_config.get("is_defender")):
                 return None
 
             # 激活技能
@@ -91,22 +91,28 @@ class ConfigSkill:
 
         return handler
 
-    def _check_conditions(self, conditions: List[Dict], event_data: EventInfo, attacker_check: bool) -> bool:
+    def _check_conditions(self, conditions: List[Dict], event_data: EventInfo, attacker_check: bool,defender_check:bool) -> bool:
         """检查触发条件"""
         context = self._create_execution_context(event_data)
         # 自己不触发自己
         if self.name == event_data.skill_name:
             return False
-        # 攻击者检查
-        if self.owner.name == event_data.source.name:
-            is_attacker = True
-        else:
-            is_attacker = False
-        if not (is_attacker == attacker_check):
+
+        # 确定角色身份
+        is_attacker = self.owner.name == event_data.source.name
+        is_defender = self.owner.name == event_data.target.name
+
+        # 攻击者条件检查
+        if attacker_check is not None and is_attacker != attacker_check:
             return False
-        if is_attacker and (self.owner != event_data.source or self.owner == event_data.target):
+
+        # 防御者条件检查
+        if defender_check is not None and is_defender != defender_check:
             return False
-        if not is_attacker and (self.owner == event_data.source or self.owner != event_data.target):
+
+        # 验证身份一致性
+        if (is_attacker and self.owner != event_data.source) or \
+                (is_defender and self.owner != event_data.target):
             return False
 
         # 技能触发条件检查

@@ -79,6 +79,7 @@
   triggers:
     - event_type: "damage_calc"
       is_attacker: false
+      is_defender: true
       conditions:
         - expr: "damage > 0 and damage_type == 'physical' and is_dodged == False"
 
@@ -97,6 +98,7 @@
   triggers:
     - event_type: "after_take_damage"
       is_attacker: true
+      is_defender: false
       conditions:
         - expr: "damage >0 and damage_type == 'physical' and is_dodged == False"
       priority: 2
@@ -140,6 +142,7 @@
   triggers:
     - event_type: "after_take_damage"
       is_attacker: false
+      is_defender: true
       conditions:
         - expr: "damage > 0 and damage_type == 'physical' and op_type == 'damage'"
 
@@ -179,7 +182,6 @@
   stop_propagation: true
   triggers:
     - event_type: "after_take_damage"
-      is_attacker: false
       conditions:
         - expr: "damage > 0 and target.is_alive == False"
   effects:

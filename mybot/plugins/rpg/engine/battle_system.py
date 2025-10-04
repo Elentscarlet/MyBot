@@ -112,7 +112,7 @@ class BattleSystem:
 
             for e in round_data.sub_event:
                 self.put_event(e)
-                self.event_tracker.add_event_to_chain(e, round_data.event_id)
+
 
             processed_events = 0
             max_events = 20  # 防止无限循环
@@ -133,6 +133,9 @@ class BattleSystem:
 
                 # 伤害结算后
                 self.event_bus.publish(BattleEvent.AFTER_TAKE_DAMAGE, event)
+
+                if self.check_battle_end():
+                    break
 
                 for e in event.sub_event:
                     self.put_event(e)
