@@ -1,6 +1,6 @@
 import queue
 import random
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import List, Dict, Any
 
 from .event_bus import EventBus, BattleEvent
@@ -51,15 +51,18 @@ class BattleSystem:
         self._event_type_count: Dict[str, Dict[Any, int]] = defaultdict(lambda: defaultdict(int))
         self.winner = None
         self.battle_log = []
-        self.event_queue = queue.Queue()
+        self.event_queue = deque()
         self.event_tracker = EventChainTracker()  # 初始化事件追踪器
         self.report_mode = 0
 
     def put_event(self, event: EventInfo):
-        self.event_queue.put(event)
+        self.event_queue.append(event)
+
+    def put_event_at_first(self, event: EventInfo):
+        self.event_queue.appendleft(event)
 
     def pop_event(self) -> EventInfo:
-        return self.event_queue.get()
+        return self.event_queue.popleft()
 
     def _register_core_handlers(self):
         """注册核心事件处理器"""
@@ -117,10 +120,9 @@ class BattleSystem:
             processed_events = 0
             max_events = 20  # 防止无限循环
             # 伤害事件循环
-            while self.event_queue.qsize() > 0 and processed_events < max_events:
+            while len(self.event_queue)> 0 and processed_events < max_events:
                 event = self.pop_event()
                 processed_events += 1
-                self.event_tracker.add_event_to_chain(event, event.parent_event_id)
 
                 # 攻击后阶段:闪避计算
                 self.event_bus.publish(BattleEvent.AFTER_ATTACK, event)
@@ -134,11 +136,13 @@ class BattleSystem:
                 # 伤害结算后
                 self.event_bus.publish(BattleEvent.AFTER_TAKE_DAMAGE, event)
 
+                self.event_tracker.add_event_to_chain(event, event.parent_event_id)
+
                 if self.check_battle_end():
                     break
 
                 for e in event.sub_event:
-                    self.put_event(e)
+                    self.put_event_at_first(e)
 
             # 交換順序
             attacker, defender = defender, attacker
