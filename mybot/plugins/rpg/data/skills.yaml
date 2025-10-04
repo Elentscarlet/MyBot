@@ -112,7 +112,7 @@
   cd: 0
   stop_propagation: true
   get_by_gacha: false
-  description: "【基础技能】【暴击>=8获取】破甲：暴击时降低敌方护甲5点，持续5回合，可以叠加"
+  description: "【基础技能】【暴击>=8获取】破甲：暴击时降低敌方防御5点，持续5回合，可以叠加"
   triggers:
     - event_type: "damage_calc"
       is_attacker: true
@@ -194,17 +194,17 @@
   cd: 0
   level: 1
   get_by_gacha: true
-  description: "【武器技能】【雷霆一击】:攻击时有几率触发额外雷电伤害,对敌方造成百分比生命伤害"
+  description: "【武器技能】【雷霆一击】:攻击时有10%(每级+5%)的概率触发额外雷电伤害,对敌方造成生命值(8%*等级)伤害"
   stop_propagation: true
   triggers:
     - event_type: "damage_calc"
       is_attacker: true
       conditions:
         - expr: "damage > 0 and op_type == 'damage' and is_dodged == False "
-        - expr: "random() < 0.10 + skill.level * 0.05"  # 10%基础几率，每级提升5%
+        - expr: "random() < 0.05 + skill.level * 0.05"  # 10%基础几率，每级提升5%
   effects:
     - op: "add_damage"
-      formula: "min(50 * skill.level , target.MAX_HP * skill.level/10)"
+      formula: "min(50 * skill.level , target.MAX_HP * skill.level/12.5)"
       damage_type: "lightning"
 
 - id: full_power

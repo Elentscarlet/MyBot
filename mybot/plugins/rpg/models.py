@@ -406,7 +406,7 @@ def get_skill(player: Player, skill_id: str, skill_map: Dict[str, Dict]) -> Tupl
         return False, f"玩家已经拥有技能[{skill_map.get(skill_id).get("name")}]"
 
     # 如果技能槽未满
-    if len(player.skills) < 2 + player.weapon.level:
+    if len(player.skills) < 3 + player.weapon.level:
         player.skills.__setitem__(skill_id, 1)
         put_player(player)
         return True, f"技能[{skill_map.get(skill_id).get("name")}]获取成功"

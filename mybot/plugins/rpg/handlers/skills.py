@@ -79,6 +79,7 @@ async def _(event: MessageEvent):
 
         put_player(p)
         await _get_skill.finish(full_message)
+        return
 
     # 获取玩家尚未拥有的技能
     available_skills = [skill_id for skill_id in skills_map.keys() if skill_id not in p.skills]
@@ -130,7 +131,7 @@ async def _(event: MessageEvent):
         equipped_skills_info += f"{i + 1}. {skills_map.get(skill).get('name')}\n"
 
     reply_msg += f"\n【已装配技能】：\n{equipped_skills_info}\n"
-    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「{p.weapon.level}」个技能，目前可以记忆「{p.weapon.level+2}」个技能"
+    reply_msg += f"\n【提示】技能需要装配才能生效，目前可以装配「{p.weapon.level}」个技能，目前可以记忆「{p.weapon.level+3}」个技能"
     reply_msg += f"\n【指令】输入'技能+数字'装配技能（例如：技能1）"
     reply_msg += f"\n【指令】输入'升级技能+数字'升级技能（例如：升级技能1）"
     reply_msg += f"\n【指令】输入'遗忘技能+数字'遗忘技能（例如：遗忘技能1）"
@@ -138,7 +139,7 @@ async def _(event: MessageEvent):
 
     await _show_skills.finish(reply_msg)
 
-_level_up_skill = on_regex(r"^升级技能([1-5])$")
+_level_up_skill = on_regex(r"^升级技能([1-9])$")
 @_level_up_skill.handle()
 async def _(event: MessageEvent):
     uid, gid, name = ids_of(event)
