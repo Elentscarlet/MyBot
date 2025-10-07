@@ -70,7 +70,7 @@
   can_dispel: true
   can_resist: true
   duration: 5
-  max_stack: 10
+  max_stack: 20
   stack_type: "INTENSITY"
   description: "降低目标敏捷1点"
   turn_end:
