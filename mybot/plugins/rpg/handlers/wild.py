@@ -16,6 +16,7 @@ from mybot.plugins.rpg.utils import ids_of
 wildStart_m = on_fullmatch(("发起远征", "远征"))
 wildChoose_m = on_regex(r"^远征([1-3])$")
 wildend_m = on_fullmatch("结束远征")
+wild_multiply = on_regex(r"^远征倍率([1-5])$")
 
 # 简单内存存储（生产建议用redis等持久化）
 expedition_state = {}
@@ -95,9 +96,9 @@ async def start_expedition(event: MessageEvent):
     reply_msg = ""
     if p.counters.free_explore_used < 2:
         p.counters.free_explore_used += 1
-    elif p.diamond >= 500:
-        p.diamond -= 500
-        reply_msg += "本日免费远征次数已耗尽，花费500钻开始远征"
+    elif p.diamond >= 500 * p.wild_multiply:
+        p.diamond -= 500 * p.wild_multiply
+        reply_msg += f"本日免费远征次数已耗尽，花费{500 * p.wild_multiply}钻开始远征"
     else:
         reply_msg = "本日免费远征次数已耗尽，钻石不足无法开始远征"
         await wildStart_m.finish(reply_msg)
@@ -165,7 +166,7 @@ async def choose_expedition(event: MessageEvent, match=wildChoose_m):
     if winner == p.name:
         round += 1
         # 计算奖励
-        reward = calculate_reward(selected_monster)
+        reward = calculate_reward(selected_monster) * p.wild_multiply
         result_msg += f" 你击败了{selected_monster['name']}！\n"
 
         monsters_data = _load_monsters()
@@ -221,6 +222,26 @@ async def end_wild(event: MessageEvent):
 
     del expedition_state[key]
     await wildend_m.finish(f"结束远征，获得{reward}钻石💎")
+
+@wild_multiply.handle()
+async def wild_multiply(event: MessageEvent):
+    uid, gid, name = ids_of(event)
+    p = get_player(uid, gid, name)
+
+    # 获取消息文本
+    msg = event.get_plaintext()
+
+    # 使用正则匹配获取选择
+    match = re.match(r"^远征倍率([1-5])$", msg)
+    if not match:
+        await wildChoose_m.finish("格式错误，使用示例：「远征倍率3」，最高倍率不超过5")
+
+    # 获取选择
+    multi = int(match.group(1))  # 转换为0-based索引
+
+    p.wild_multiply = multi
+    put_player(p)
+    await wild_multiply.finish(f"已将远征倍率设置为「{multi}」")
 
 
 def calculate_reward(monster: Dict) -> int:

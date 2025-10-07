@@ -198,6 +198,7 @@ class Player:
     dust: int = 0
     diamond: int = 0
     tear: int = 0
+    wild_multiply: int = 1
     counters: Counters = field(default_factory=Counters.today)
     config: Pconfig = field(default_factory=Pconfig)
     skills: Dict[str, int] = field(default_factory=dict)
@@ -243,6 +244,7 @@ class Player:
             config=Pconfig.from_dict(d.get("config", {})),
             skills=d.get("skills", {}),
             equipped_skills=d.get("equipped_skills", []),
+            wild_multiply= d.get("wild_multiply",1)
         )
 
     def to_dict(self) -> Dict:
@@ -261,7 +263,8 @@ class Player:
             "counters": self.counters.to_dict(),
             "config": self.config.to_dict(),
             "skills": self.skills,
-            "equipped_skills": self.equipped_skills
+            "equipped_skills": self.equipped_skills,
+            "wild_multiply":self.wild_multiply
         }
 
     def extra_distribute(self, attribute: str):
