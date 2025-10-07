@@ -16,7 +16,7 @@ from mybot.plugins.rpg.utils import ids_of
 wildStart_m = on_fullmatch(("发起远征", "远征"))
 wildChoose_m = on_regex(r"^远征([1-3])$")
 wildend_m = on_fullmatch("结束远征")
-wild_multiply = on_regex(r"^远征倍率([1-5])$")
+wild_multiply_m = on_regex(r"^远征倍率([1-5])$")
 
 # 简单内存存储（生产建议用redis等持久化）
 expedition_state = {}
@@ -223,7 +223,7 @@ async def end_wild(event: MessageEvent):
     del expedition_state[key]
     await wildend_m.finish(f"结束远征，获得{reward}钻石💎")
 
-@wild_multiply.handle()
+@wild_multiply_m.handle()
 async def wild_multiply(event: MessageEvent):
     uid, gid, name = ids_of(event)
     p = get_player(uid, gid, name)
@@ -241,7 +241,7 @@ async def wild_multiply(event: MessageEvent):
 
     p.wild_multiply = multi
     put_player(p)
-    await wild_multiply.finish(f"已将远征倍率设置为「{multi}」")
+    await wild_multiply_m.finish(f"已将远征倍率设置为「{multi}」")
 
 
 def calculate_reward(monster: Dict) -> int:
